@@ -82,7 +82,7 @@ function App() {
     } catch (error) {
       console.error("Error loading from localStorage:", error);
     }
-  }, []);
+  }, [updateSpacedRepetitionData]);
 
   // Save data to localStorage fallback
   const saveToLocalStorage = useCallback(() => {
