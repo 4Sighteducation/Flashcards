@@ -14,15 +14,59 @@ const SpacedRepetition = ({
   const [showFlipResponse, setShowFlipResponse] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [studyCompleted, setStudyCompleted] = useState(false);
+  
+  // New state for subject and topic selection
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [filteredCards, setFilteredCards] = useState([]);
 
-  // Update current cards when box changes
+  // Group cards by subject and topic
   useEffect(() => {
-    setCurrentCards(cards.filter((card) => !card.attempted));
+    if (cards.length > 0) {
+      // Extract unique subjects from cards
+      const uniqueSubjects = [...new Set(cards.map(card => card.subject || "General"))];
+      setSubjects(uniqueSubjects);
+      
+      // If we have a selected subject, update topics
+      if (selectedSubject) {
+        const topicsForSubject = [...new Set(
+          cards
+            .filter(card => (card.subject || "General") === selectedSubject)
+            .map(card => card.topic || "General")
+        )];
+        setTopics(topicsForSubject);
+      } else if (uniqueSubjects.length > 0) {
+        // Auto-select first subject if none selected
+        setSelectedSubject(uniqueSubjects[0]);
+      }
+    }
+  }, [cards, selectedSubject]);
+
+  // Filter cards when subject or topic changes
+  useEffect(() => {
+    let filtered = [...cards];
+    
+    if (selectedSubject) {
+      filtered = filtered.filter(card => (card.subject || "General") === selectedSubject);
+      
+      if (selectedTopic) {
+        filtered = filtered.filter(card => (card.topic || "General") === selectedTopic);
+      }
+    }
+    
+    setFilteredCards(filtered);
+  }, [cards, selectedSubject, selectedTopic]);
+
+  // Update current cards when filtered cards change
+  useEffect(() => {
+    setCurrentCards(filteredCards);
     setCurrentIndex(0);
     setIsFlipped(false);
     setShowFlipResponse(false);
     setStudyCompleted(false);
-  }, [cards, currentBox]);
+  }, [filteredCards, currentBox]);
 
   // Box information text
   const boxInfo = {
@@ -135,6 +179,17 @@ const SpacedRepetition = ({
     }
   };
 
+  // Handle subject selection
+  const handleSubjectSelect = (subject) => {
+    setSelectedSubject(subject);
+    setSelectedTopic(null);
+  };
+
+  // Handle topic selection
+  const handleTopicSelect = (topic) => {
+    setSelectedTopic(topic);
+  };
+
   // Render the completed view when all cards are done
   if (studyCompleted) {
     return (
@@ -173,6 +228,26 @@ const SpacedRepetition = ({
     );
   }
 
+  // Render multiple choice options if applicable
+  const renderMultipleChoice = (card) => {
+    if (!card.options || !Array.isArray(card.options) || card.options.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="multiple-choice-options">
+        <h4>Options:</h4>
+        <ul>
+          {card.options.map((option, index) => (
+            <li key={index} className={isFlipped && option === card.correctAnswer ? "correct-option" : ""}>
+              {option}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   // Render the study interface
   return (
     <div className="spaced-repetition">
@@ -193,42 +268,99 @@ const SpacedRepetition = ({
             </button>
           ))}
         </div>
-
-        <button className="return-button" onClick={onReturnToBank}>
-          Return to Card Bank
-        </button>
       </div>
+
+      <div className="subject-topic-selection">
+        <div className="subject-selector">
+          <h3>Select Subject:</h3>
+          <div className="subject-list">
+            {subjects.map((subject) => (
+              <div 
+                key={subject}
+                className={`subject-item ${selectedSubject === subject ? 'selected' : ''}`}
+                onClick={() => handleSubjectSelect(subject)}
+              >
+                {subject}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {selectedSubject && (
+          <div className="topic-selector">
+            <h3>Select Topic:</h3>
+            <div className="topic-list">
+              <div 
+                className={`topic-item ${selectedTopic === null ? 'selected' : ''}`}
+                onClick={() => handleTopicSelect(null)}
+              >
+                All Topics
+              </div>
+              {topics.map((topic) => (
+                <div 
+                  key={topic}
+                  className={`topic-item ${selectedTopic === topic ? 'selected' : ''}`}
+                  onClick={() => handleTopicSelect(topic)}
+                >
+                  {topic}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <button className="return-button" onClick={onReturnToBank}>
+        Return to Card Bank
+      </button>
 
       {currentCards.length > 0 ? (
         <div className="card-study-area">
           <div
             className={`study-card ${isFlipped ? "flipped" : ""}`}
             onClick={handleCardFlip}
+            style={{
+              '--card-color': currentCards[currentIndex].cardColor || '#ffffff'
+            }}
           >
             <div className="card-inner">
               <div className="card-front">
+                <div className="card-subject-topic">
+                  <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
+                  <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
+                </div>
                 <div
                   className="card-content"
                   dangerouslySetInnerHTML={{
                     __html:
                       currentCards[currentIndex].front ||
                       currentCards[currentIndex].question ||
-                      "No question",
+                      "No question"
                   }}
                 />
+                {currentCards[currentIndex].questionType === 'multiple_choice' && !isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               </div>
               <div className="card-back">
+                <div className="card-subject-topic">
+                  <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
+                  <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
+                </div>
                 <div
                   className="card-content"
                   dangerouslySetInnerHTML={{
                     __html:
                       currentCards[currentIndex].back ||
                       currentCards[currentIndex].detailedAnswer ||
-                      "No answer",
+                      currentCards[currentIndex].correctAnswer ||
+                      "No answer"
                   }}
                 />
               </div>
             </div>
+          </div>
+
+          <div className="card-counter">
+            Card {currentIndex + 1} of {currentCards.length}
           </div>
 
           <div className="card-navigation">
@@ -239,7 +371,7 @@ const SpacedRepetition = ({
             >
               Previous
             </button>
-            <div className="card-counter">
+            <div className="card-index">
               {currentIndex + 1} / {currentCards.length}
             </div>
             <button
@@ -255,17 +387,14 @@ const SpacedRepetition = ({
             <div className="flip-response">
               <p>Did you know the answer?</p>
               <div className="response-buttons">
-                <button
-                  className="correct-button"
-                  onClick={handleCorrectAnswer}
-                >
-                  Yes - I got it right
+                <button className="correct-button" onClick={handleCorrectAnswer}>
+                  Correct
                 </button>
                 <button
                   className="incorrect-button"
                   onClick={handleIncorrectAnswer}
                 >
-                  No - Move to Box 1
+                  Incorrect
                 </button>
               </div>
             </div>
@@ -273,9 +402,10 @@ const SpacedRepetition = ({
         </div>
       ) : (
         <div className="empty-box">
-          <h3>No cards to study in this box</h3>
+          <h3>No cards to study</h3>
           <p>
-            Select another box or return to your card bank to add more cards.
+            There are no cards in this box for the selected subject/topic.
+            Please select a different box, subject, or topic, or add more cards to your collection.
           </p>
         </div>
       )}

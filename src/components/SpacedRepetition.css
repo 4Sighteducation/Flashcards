@@ -104,9 +104,10 @@
 
 .study-card {
   width: 100%;
-  height: 400px;
+  height: 450px;
   perspective: 1000px;
   cursor: pointer;
+  margin-bottom: 20px;
 }
 
 .card-inner {
@@ -132,8 +133,8 @@
   align-items: center;
   justify-content: center;
   padding: 30px;
-  border-radius: 8px;
-  background-color: white;
+  border-radius: 12px;
+  background-color: var(--card-color, white);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   overflow: auto;
 }
@@ -142,10 +143,28 @@
   transform: rotateY(180deg);
 }
 
+.card-subject-topic {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.card-subject {
+  font-weight: bold;
+  color: #06206e;
+}
+
+.card-topic {
+  color: #555;
+}
+
 .card-content {
-  font-size: 1.2rem;
+  font-size: 1.6rem;
   text-align: center;
-  max-width: 100%;
+  width: 100%;
+  padding: 10px;
 }
 
 .card-navigation {
@@ -153,6 +172,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 20px;
 }
 
 .prev-button,
@@ -178,6 +198,13 @@
 }
 
 .card-counter {
+  text-align: center;
+  font-weight: bold;
+  color: #06206e;
+  margin-bottom: 10px;
+}
+
+.card-index {
   font-weight: bold;
   color: #555;
 }
@@ -238,8 +265,14 @@
   background-color: white;
   border-radius: 8px;
   padding: 30px;
+  margin-top: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
+}
+
+.empty-box h3 {
+  color: #06206e;
+  margin: 0 0 15px 0;
 }
 
 .completion-message {
@@ -261,7 +294,96 @@
   margin: 20px 0;
 }
 
-/* Responsive design */
+/* Add the following CSS for subject/topic selection and improved card display */
+
+.subject-topic-selection {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subject-selector, .topic-selector {
+  width: 100%;
+}
+
+.subject-selector h3, .topic-selector h3 {
+  color: #06206e;
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+}
+
+.subject-list, .topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.subject-item, .topic-item {
+  padding: 8px 15px;
+  background-color: #f5f5f5;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  border: 2px solid transparent;
+}
+
+.subject-item:hover, .topic-item:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.subject-item.selected, .topic-item.selected {
+  background-color: #06206e;
+  color: white;
+  font-weight: bold;
+  border-color: #06206e;
+}
+
+/* Multiple choice formatting */
+.multiple-choice-options {
+  width: 100%;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.multiple-choice-options h4 {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.multiple-choice-options ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.multiple-choice-options li {
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  font-size: 1.2rem;
+}
+
+.multiple-choice-options li:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.multiple-choice-options li.correct-option {
+  background-color: rgba(76, 175, 80, 0.3);
+  border-left: 4px solid #4caf50;
+}
+
+/* Media queries for responsiveness */
 @media (max-width: 768px) {
   .box-buttons {
     flex-direction: column;
@@ -277,11 +399,11 @@
   }
 
   .study-card {
-    height: 300px;
+    height: 350px;
   }
 
   .card-content {
-    font-size: 1rem;
+    font-size: 1.3rem;
   }
 
   .response-buttons {
@@ -292,5 +414,19 @@
   .correct-button,
   .incorrect-button {
     width: 100%;
+  }
+
+  .subject-list, .topic-list {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .subject-item, .topic-item {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .multiple-choice-options li {
+    font-size: 1rem;
   }
 }

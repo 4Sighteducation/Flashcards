@@ -137,7 +137,13 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
   const generateTopics = async (examBoard, examType, subject) => {
     try {
       // Create prompt for topic generation
-      const prompt = `Generate a list of 8-10 specific topics for ${examBoard} ${examType} ${subject}. These should be actual curriculum topics that would be covered in this subject. Return ONLY a valid JSON array of strings with no additional text, like this: ["Topic 1", "Topic 2", "Topic 3"]`;
+      const prompt = `Generate a list of 10-15 specific, real-world topics for ${examBoard} ${examType} ${subject}. 
+      These should be actual curriculum topics in this exact subject according to this exam board's specification. 
+      Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
+      Additionally, include a short description for each topic from the curriculum to help the user understand what it covers.
+      Return ONLY a valid JSON array of objects with the format: [{"topic": "Topic Name", "description": "Brief description of what this topic covers"}]`;
+      
+      console.log("Generating topics with prompt:", prompt);
       
       // Make the API call to OpenAI
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -149,7 +155,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
         body: JSON.stringify({
           model: "gpt-4o",
           messages: [{ role: "user", content: prompt }],
-          max_tokens: 500,
+          max_tokens: 1000,
           temperature: 0.3
         })
       });
@@ -164,17 +170,21 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       const content = data.choices[0].message.content;
       const cleanedContent = cleanOpenAIResponse(content);
       
-      let topics;
+      let topicsData;
       try {
-        topics = JSON.parse(cleanedContent);
+        topicsData = JSON.parse(cleanedContent);
       } catch (e) {
         console.error("Error parsing OpenAI response for topics:", e);
         throw new Error("Failed to parse AI response for topics. Please try again.");
       }
       
-      if (!Array.isArray(topics) || topics.length === 0) {
+      if (!Array.isArray(topicsData) || topicsData.length === 0) {
         throw new Error("Invalid response format from AI for topics. Please try again.");
       }
+      
+      // Extract just the topic names for the dropdown
+      const topics = topicsData.map(item => item.topic || "");
+      console.log("Generated topics:", topics);
       
       return topics;
     } catch (error) {
@@ -243,32 +253,65 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       
       if (formData.questionType === "acronym") {
         let topicInfo = finalTopic ? ` with focus on ${finalTopic}` : "";
-        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${formData.examBoard} ${finalSubject}${topicInfo}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
+        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${formData.examBoard} ${formData.examType} ${finalSubject}${topicInfo}. Create a useful acronym from some essential course knowledge. Be creative and playful. Format exactly as: [{"acronym": "Your acronym", "explanation": "Detailed explanation here"}]`;
       } else {
         // Determine complexity based on exam type
         let complexityInstruction;
         if (formData.examType === "A-Level") {
-          complexityInstruction = "Ensure that the questions and answers are detailed, advanced, and reflect a deep understanding of the subject matter. Where possible reference content found in the ALevel Subject / Topic Course syllabus, or example from past papers.Any generated content that reference currency should use GBP. Any answers that have a date please use the format dd/mm/yyy";
-        } else {
-          complexityInstruction = "Keep the questions straightforward, focusing on fundamental concepts.Where possible reference content found in the GCSE Subject / Topic Course syllabus, or example from past papers. Any generated content that reference currency should use GBP. Any answers that have a date please use the format dd/mm/yyy";
+          complexityInstruction = "Make these appropriate for A-Level students (age 16-18). Questions should be challenging and involve deeper thinking. Include sufficient detail in answers and use appropriate technical language.";
+        } else { // GCSE
+          complexityInstruction = "Make these appropriate for GCSE students (age 14-16). Questions should be clear but still challenging. Explanations should be thorough but accessible.";
         }
         
-        // Determine question type specific instructions
-        let typeInstruction, formatInstruction;
+        // Base prompt
+        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). 
+Generate ${formData.numCards} high-quality ${formData.examBoard} ${formData.examType} ${finalSubject} flashcards for the specific topic "${finalTopic}".
+${complexityInstruction}
+
+Before generating questions, scrape the latest ${formData.examBoard} ${formData.examType} ${finalSubject} specification to ensure the content matches the current curriculum exactly.
+
+Use this format for different question types:
+`;
         
+        // Add format based on question type
         if (formData.questionType === "multiple_choice") {
-          typeInstruction = "Each multiple‐choice flashcard must have exactly 4 options (labeled a, b, c, and d); only one is correct. There should always be a non‑empty correctAnswer field.If the AI cannot generate 4 options or a correctAnswer field it should output an error message instead.Any generated content that reference currency should use GBP. Any answers that have a date please use the format dd/mm/yyy";
-          formatInstruction = `Format exactly as: [{"question": "Your question", "options": ["a) Option 1", "b) Option 2", "c) Option 3", "d) Option 4"], "correctAnswer": "Correct Option", "detailedAnswer": "Detailed explanation here"}]`;
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "multiple_choice",
+    "question": "Clear, focused question based on the curriculum",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": "The correct option exactly as written in options array",
+    "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
+  }
+]`;
         } else if (formData.questionType === "short_answer") {
-          typeInstruction = "For short answer questions, generate a concise, knowledge-based question suitable for 2–4 marks, including key points and a detailed answer.Any generated content that reference currency should use GBP. Any answers that have a date please use the format dd/mm/yyy";
-          formatInstruction = `Format exactly as: [{"question": "Your question", "keyPoints": ["Key point 1", "Key point 2"], "detailedAnswer": "Detailed explanation here"}]`;
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "short_answer",
+    "question": "Clear, focused question from the curriculum",
+    "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
+    "detailedAnswer": "Complete and thorough explanation with all necessary information"
+  }
+]`;
         } else if (formData.questionType === "essay") {
-          typeInstruction = "For essay style questions, generate a challenging prompt requiring analysis, comparison, or discussion, including key points and a comprehensive answer.";
-          formatInstruction = `Format exactly as: [{"question": "Your question", "keyPoints": ["Key point 1", "Key point 2"], "detailedAnswer": "Detailed explanation here"}]`;
+          prompt += `[
+  {
+    "subject": "${finalSubject}",
+    "topic": "${finalTopic}",
+    "questionType": "essay",
+    "question": "Thought-provoking essay question matching the curriculum",
+    "keyPoints": ["Important point 1", "Important point 2", "Important point 3", "Important point 4"],
+    "detailedAnswer": "Structured essay plan with introduction, key arguments, and conclusion guidance"
+  }
+]`;
         }
-        
-        prompt = `Return only a valid JSON array with no additional text. Please output all mathematical expressions in plain text (avoid markdown or LaTeX formatting). Generate ${formData.numCards} exam-style flashcards for ${formData.examBoard} ${finalSubject} on the topic ${finalTopic}. ${complexityInstruction} ${typeInstruction} ${formatInstruction}`;
       }
+      
+      console.log("Generating cards with prompt:", prompt);
       
       // Make the API call to OpenAI
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -280,8 +323,8 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
         body: JSON.stringify({
           model: "gpt-4o",
           messages: [{ role: "user", content: prompt }],
-          max_tokens: formData.questionType === "acronym" ? 600 : 3000,
-          temperature: 0.5
+          max_tokens: 2000,
+          temperature: 0.7
         })
       });
       
@@ -293,90 +336,88 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       
       // Parse the response
       const content = data.choices[0].message.content;
+      console.log("Raw AI response:", content);
+      
       const cleanedContent = cleanOpenAIResponse(content);
       
-      let flashcards;
+      let cards;
       try {
-        flashcards = JSON.parse(cleanedContent);
+        cards = JSON.parse(cleanedContent);
       } catch (e) {
-        console.error("Error parsing OpenAI response:", e);
+        console.error("Error parsing AI response:", e);
         throw new Error("Failed to parse AI response. Please try again.");
       }
       
-      if (!Array.isArray(flashcards) || flashcards.length === 0) {
+      if (!Array.isArray(cards) || cards.length === 0) {
         throw new Error("Invalid response format from AI. Please try again.");
       }
       
-      // Format the cards for display
-      const formattedCards = flashcards.map((card, index) => {
+      // Process the generated cards
+      const processedCards = cards.map((card, index) => {
         // Generate a unique ID
         const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Create a formatted card based on question type
-        let formattedCard = {
+        // Add standard fields
+        const baseCard = {
           id,
           subject: finalSubject,
           topic: finalTopic,
           questionType: formData.questionType,
           cardColor: formData.subjectColor,
           baseColor: formData.subjectColor,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          boxNum: 1, // Start in box 1
         };
         
+        // Process specific question types
         if (formData.questionType === "acronym") {
-          formattedCard = {
-            ...formattedCard,
+          return {
+            ...baseCard,
             acronym: card.acronym,
             explanation: card.explanation,
             front: `Acronym: ${card.acronym}`,
             back: `Explanation: ${card.explanation}`
           };
         } else if (formData.questionType === "multiple_choice") {
-          // Format options to make sure they're proper
-          const options = card.options.map(opt => {
-            if (typeof opt === 'string' && !opt.match(/^[a-d]\)/i)) {
-              const optionLetter = String.fromCharCode(97 + card.options.indexOf(opt));
-              return `${optionLetter}) ${opt}`;
-            }
-            return opt;
-          });
-          
-          formattedCard = {
-            ...formattedCard,
+          return {
+            ...baseCard,
             question: card.question,
-            options: options,
+            options: card.options,
             correctAnswer: card.correctAnswer,
             detailedAnswer: card.detailedAnswer,
             front: card.question,
-            back: `Correct Answer: ${card.correctAnswer}`
+            back: `Correct Answer: ${card.correctAnswer}\n\n${card.detailedAnswer}`
           };
-        } else {
-          // For short answer and essay
-          let keyPointsHtml = "";
-          if (card.keyPoints && card.keyPoints.length > 0) {
-            keyPointsHtml = 
-              "<ul>" +
-              card.keyPoints.map(point => `<li>${point}</li>`).join("") +
+        } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
+          let keyPointsFormatted = "";
+          if (card.keyPoints && Array.isArray(card.keyPoints)) {
+            keyPointsFormatted = "<ul>" + 
+              card.keyPoints.map(point => `<li>${point}</li>`).join("") + 
               "</ul>";
           }
           
-          formattedCard = {
-            ...formattedCard,
+          return {
+            ...baseCard,
             question: card.question,
-            keyPoints: card.keyPoints,
+            keyPoints: card.keyPoints || [],
             detailedAnswer: card.detailedAnswer,
             front: card.question,
-            back: keyPointsHtml
+            back: keyPointsFormatted + "<div class='detailed-answer'>" + card.detailedAnswer + "</div>"
+          };
+        } else {
+          return {
+            ...baseCard,
+            front: card.front || card.question,
+            back: card.back || card.answer
           };
         }
-        
-        return formattedCard;
       });
       
-      setGeneratedCards(formattedCards);
+      setGeneratedCards(processedCards);
+      
     } catch (error) {
       console.error("Error generating cards:", error);
-      setError(error.message || "Failed to generate cards. Please try again.");
+      setError(`Error: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
