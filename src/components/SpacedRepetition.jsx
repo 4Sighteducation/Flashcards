@@ -195,8 +195,8 @@ const SpacedRepetition = ({
       const currentCard = currentCards[currentIndex];
       
       if (!currentCard.isReviewable) {
-        // Show review date message
-        setNextReviewDate(new Date(currentCard.nextReviewDate));
+        // Since we don't have nextReviewDate anymore, just show a generic message
+        setNextReviewDate(new Date(Date.now() + 24 * 60 * 60 * 1000)); // Tomorrow as fallback
         setShowReviewDateMessage(true);
         return;
       }
@@ -402,13 +402,7 @@ const SpacedRepetition = ({
           {[1, 2, 3, 4, 5].map((box) => (
             <button
               key={box}
-              className={`box-button ${currentBox === box ? "active" : ""} ${
-                spacedRepetitionData[`box${box}`]?.some(card => {
-                  if (!card.nextReviewDate) return true;
-                  const reviewDate = new Date(card.nextReviewDate);
-                  return reviewDate <= new Date();
-                }) ? "glowing" : ""
-              }`}
+              className={`box-button ${currentBox === box ? "active" : ""}`}
               onClick={() => onSelectBox(box)}
             >
               Box {box}

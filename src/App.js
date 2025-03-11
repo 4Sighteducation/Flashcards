@@ -454,20 +454,12 @@ function App() {
         const boxKey = `box${i}`;
         const fieldKey = `field_299${i}`;
         
-        // Box is ready if any card's next review date is today or earlier
-        boxStatus[fieldKey] = spacedRepetitionData[boxKey].some(card => {
-          const nextReviewDate = new Date(card.nextReviewDate);
-          return nextReviewDate <= today;
-        });
+        // With string IDs, we can't check review dates, so we'll consider boxes with cards as ready
+        boxStatus[fieldKey] = spacedRepetitionData[boxKey].length > 0;
         
-        // Special case for Box 5 - only if cards have been there for 3+ weeks
+        // Special case for Box 5 - we'll just set it if there are cards in box 5
         if (i === 5) {
-          boxStatus.field_2995 = spacedRepetitionData.box5.some(card => {
-            const lastReviewed = new Date(card.lastReviewed);
-            const threeWeeksAgo = new Date(today);
-            threeWeeksAgo.setDate(today.getDate() - 21);
-            return lastReviewed <= threeWeeksAgo;
-          });
+          boxStatus.field_2995 = spacedRepetitionData.box5.length > 0;
         }
       }
       
