@@ -33,12 +33,17 @@ const BRIGHT_COLORS = [
   "#FF69B4", "#8B4513", "#00CED1", "#ADFF2F", "#DC143C"
 ];
 
-const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
-  // State for wizard steps
+// API keys - in production, these should be in server environment variables
+const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
+const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
+
+const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
+  // Step management state
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 7;
+  const [totalSteps, setTotalSteps] = useState(7);
   
-  // Form state
+  // Form data state
   const [formData, setFormData] = useState({
     examBoard: "",
     examType: "",
@@ -47,42 +52,137 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
     topic: "",
     newTopic: "",
     numCards: 5,
-    questionType: "short_answer",
+    questionType: "multiple_choice",
     subjectColor: BRIGHT_COLORS[0]
   });
   
-  // Generated cards
-  const [generatedCards, setGeneratedCards] = useState([]);
-  
-  // Loading state
+  // Processing states
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   
-  // Available topics based on selected subject
-  const [availableTopics, setAvailableTopics] = useState([]);
-  const [availableSubjects, setAvailableSubjects] = useState([]);
+  // Results states
+  const [generatedCards, setGeneratedCards] = useState([]);
   
-  // New state for hierarchical topics
+  // New states for hierarchical topics and saved topic lists
   const [hierarchicalTopics, setHierarchicalTopics] = useState([]);
   const [savedTopicLists, setSavedTopicLists] = useState([]);
   const [showSaveTopicDialog, setShowSaveTopicDialog] = useState(false);
   const [topicListName, setTopicListName] = useState("");
   
-  // API key - in production, this should be in a server environment variable
-  // For demo purposes, we're using a placeholder. In a real app, you would get this from your backend.
-  const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+  // State for available subjects and topics based on selection
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [availableTopics, setAvailableTopics] = useState([]);
 
-  // Load saved topic lists from localStorage on mount
+  // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
+    // Load from localStorage
+    const storedLists = localStorage.getItem('savedTopicLists');
+    const localLists = storedLists ? JSON.parse(storedLists) : [];
+    
+    // Only load from Knack if authenticated
+    if (auth && userId) {
+      // First set the local lists
+      setSavedTopicLists(localLists);
+      
+      // Then load from Knack and merge with local lists
+      loadTopicListsFromKnack()
+        .then(knackLists => {
+          if (knackLists && knackLists.length > 0) {
+            // Merge lists, avoiding duplicates by ID
+            const mergedLists = [...localLists];
+            knackLists.forEach(knackList => {
+              const existingIndex = mergedLists.findIndex(local => local.id === knackList.id);
+              if (existingIndex > -1) {
+                mergedLists[existingIndex] = knackList; // Replace with Knack version
+              } else {
+                mergedLists.push(knackList); // Add new list
+              }
+            });
+            
+            setSavedTopicLists(mergedLists);
+          }
+        })
+        .catch(error => {
+          console.error("Error loading topic lists from Knack:", error);
+        });
+    } else {
+      // Just use localStorage if not authenticated
+      setSavedTopicLists(localLists);
+    }
+    
+    // Initialize available subjects and topics
+    const examTypes = formData.examType ? ["GCSE", "A-Level"] : [];
+    setAvailableSubjects(subjects.filter(s => examTypes.includes(s.examType)));
+  }, [auth, userId]);
+
+  // Load saved topic lists from Knack
+  const loadTopicListsFromKnack = async () => {
     try {
-      const savedLists = localStorage.getItem('savedTopicLists');
-      if (savedLists) {
-        setSavedTopicLists(JSON.parse(savedLists));
+      // Check if we're authenticated or have a user ID
+      const authData = localStorage.getItem('authData');
+      if (!authData) {
+        console.log("No authentication data, skipping Knack load");
+        return [];
+      }
+      
+      const auth = JSON.parse(authData);
+      if (!auth.id) {
+        console.log("No user ID found, skipping Knack load");
+        return [];
+      }
+      
+      console.log("Loading topic lists from Knack...");
+      
+      // Get topic lists from Knack
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (!getResponse.ok) {
+        console.error("Failed to get Knack record:", await getResponse.json());
+        return [];
+      }
+      
+      const userData = await getResponse.json();
+      
+      // Parse topic lists from Knack
+      if (userData.field_3011) {
+        try {
+          const knackTopicLists = JSON.parse(userData.field_3011);
+          if (Array.isArray(knackTopicLists) && knackTopicLists.length > 0) {
+            console.log("Loaded topic lists from Knack:", knackTopicLists);
+            
+            // Merge with local lists
+            const localLists = JSON.parse(localStorage.getItem('savedTopicLists') || "[]");
+            
+            // Create a map of existing IDs
+            const existingIds = new Map();
+            localLists.forEach(list => existingIds.set(list.id, true));
+            
+            // Only add Knack lists that don't exist locally
+            const newLists = knackTopicLists.filter(list => !existingIds.has(list.id));
+            
+            if (newLists.length > 0) {
+              const mergedLists = [...localLists, ...newLists];
+              setSavedTopicLists(mergedLists);
+              localStorage.setItem('savedTopicLists', JSON.stringify(mergedLists));
+              console.log("Merged topic lists from Knack with local lists");
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing Knack topic lists:", e);
+        }
       }
     } catch (error) {
-      console.error("Error loading saved topic lists:", error);
+      console.error("Error loading topic lists from Knack:", error);
     }
-  }, []);
+  };
 
   // Effect to update available subjects when exam type changes
   useEffect(() => {
@@ -117,35 +217,34 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
   ]
       };
       
-      setAvailableSubjects(examTypeSubjects[formData.examType] || []);
+      if (examTypeSubjects[formData.examType]) {
+        // If using subjects from props, combine with predefined list
+        const combinedSubjects = [...new Set([
+          ...(subjects || []),
+          ...examTypeSubjects[formData.examType]
+        ])].sort();
+        
+        setAvailableSubjects(combinedSubjects);
+      }
     } else {
-      setAvailableSubjects([]);
+      setAvailableSubjects(subjects || []);
     }
-  }, [formData.examType]);
+  }, [formData.examType, subjects]);
 
-  // Effect to update available topics when subject changes
+  // Effect to generate topics when subject changes
   useEffect(() => {
-    // In a real implementation, this would typically be an API call to get topics for the subject
-    if (formData.subject && formData.examBoard && formData.examType) {
-      setIsGenerating(true);
-      generateTopics(formData.examBoard, formData.examType, formData.subject)
-        .then(topics => {
-          setAvailableTopics(topics);
-          setIsGenerating(false);
-        })
-        .catch(error => {
-          console.error("Error generating topics:", error);
-          // Fallback to demo topics if generation fails
-          const demoTopics = [
-            `${formData.subject} - Topic 1`,
-            `${formData.subject} - Topic 2`,
-            `${formData.subject} - Topic 3`,
-            `${formData.subject} - Advanced Concepts`,
-            `${formData.subject} - Practical Applications`
-          ];
-          setAvailableTopics(demoTopics);
-          setIsGenerating(false);
-        });
+    // Reset topics when subject changes
+    setAvailableTopics([]);
+    
+    // Auto-generate topics if subject is selected
+    if (formData.subject || formData.newSubject) {
+      if (!isGenerating && currentStep === 3 && formData.examBoard && formData.examType) {
+        console.log("Auto-generating topics for subject:", formData.subject || formData.newSubject);
+        // Uncomment to auto-generate topics
+        // generateTopics(formData.examBoard, formData.examType, formData.subject || formData.newSubject)
+        //   .then(topics => setAvailableTopics(topics))
+        //   .catch(e => console.error("Error auto-generating topics:", e));
+      }
     } else {
       setAvailableTopics([]);
     }
@@ -244,7 +343,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
     
     try {
       const newSavedList = {
-        id: Date.now(),
+        id: generateId('topiclist'),
         name: topicListName,
         examBoard: formData.examBoard,
         examType: formData.examType,
@@ -259,6 +358,11 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       // Save to localStorage
       localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
       
+      // Also save to Knack if authenticated
+      if (auth && userId) {
+        saveTopicListToKnack(newSavedList);
+      }
+      
       // Reset dialog
       setShowSaveTopicDialog(false);
       setTopicListName("");
@@ -271,48 +375,311 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
     }
   };
   
-  // Load a saved topic list
-  const loadTopicList = (listId) => {
+  // Generate a unique ID
+  const generateId = (prefix = 'topic') => {
+    const timestamp = new Date().getTime();
+    const randomStr = Math.random().toString(36).substring(2, 10);
+    return `${prefix}_${timestamp}_${randomStr}`;
+  };
+  
+  // Save topic list to Knack
+  const saveTopicListToKnack = async (topicList) => {
     try {
-      const list = savedTopicLists.find(list => list.id === listId);
-      if (!list) {
-        setError("Topic list not found");
+      // Check if we're authenticated or have a user ID
+      const authData = localStorage.getItem('authData');
+      if (!authData) {
+        console.log("No authentication data, skipping Knack save");
         return;
       }
       
-      // Update form data
-      setFormData(prev => ({
-        ...prev,
-        examBoard: list.examBoard,
-        examType: list.examType,
-        subject: list.subject
-      }));
+      const auth = JSON.parse(authData);
+      if (!auth.id) {
+        console.log("No user ID found, skipping Knack save");
+        return;
+      }
       
-      // Set topics
-      setHierarchicalTopics(list.topics);
-      setAvailableTopics(list.topics.map(item => item.topic));
+      console.log("Saving topic list to Knack...");
       
-      console.log("Loaded topic list:", list);
+      // Get existing topic lists from Knack
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (!getResponse.ok) {
+        console.error("Failed to get Knack record:", await getResponse.json());
+        return;
+      }
+      
+      const userData = await getResponse.json();
+      console.log("Retrieved user data from Knack:", userData);
+      
+      // Combine existing topic lists with the new one
+      let existingKnackTopicLists = [];
+      if (userData.field_3011) {
+        try {
+          existingKnackTopicLists = JSON.parse(userData.field_3011);
+          if (!Array.isArray(existingKnackTopicLists)) {
+            existingKnackTopicLists = [];
+          }
+        } catch (e) {
+          console.error("Error parsing existing Knack topic lists:", e);
+          existingKnackTopicLists = [];
+        }
+      }
+      
+      const combinedTopicLists = [...existingKnackTopicLists, topicList];
+      
+      // Update Knack record
+      const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      const updateResponse = await fetch(updateUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        },
+        body: JSON.stringify({
+          field_3011: JSON.stringify(combinedTopicLists)
+        })
+      });
+      
+      if (updateResponse.ok) {
+        console.log("Topic list saved to Knack successfully");
+      } else {
+        console.error("Failed to save topic list to Knack:", await updateResponse.json());
+      }
     } catch (error) {
-      console.error("Error loading topic list:", error);
-      setError("Failed to load topic list: " + error.message);
+      console.error("Error saving topic list to Knack:", error);
     }
   };
   
-  // Delete a saved topic list
-  const deleteTopicList = (listId) => {
-    try {
-      const updatedLists = savedTopicLists.filter(list => list.id !== listId);
-      setSavedTopicLists(updatedLists);
-      
-      // Save to localStorage
-      localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
-      
-      console.log("Topic list deleted, id:", listId);
-    } catch (error) {
-      console.error("Error deleting topic list:", error);
-      setError("Failed to delete topic list: " + error.message);
+  // Load a saved topic list
+  const loadTopicList = (listId) => {
+    const list = savedTopicLists.find(list => list.id === listId);
+    if (!list) {
+      setError("Topic list not found");
+      return;
     }
+    
+    // Update the form data with values from the saved list
+    setFormData(prev => ({
+      ...prev,
+      examBoard: list.examBoard,
+      examType: list.examType,
+      subject: list.subject,
+      topic: '', // Clear any existing topic
+      newSubject: '',
+      newTopic: ''
+    }));
+    
+    // Set the hierarchical topics
+    setHierarchicalTopics(list.topics);
+    
+    // Move to step 4 (topic step) 
+    setCurrentStep(4);
+    
+    console.log(`Loaded topic list: ${list.name}`);
+  };
+  
+  // Delete a topic list
+  const deleteTopicList = (listId) => {
+    // Remove from state
+    setSavedTopicLists(prev => prev.filter(list => list.id !== listId));
+    
+    // Remove from localStorage
+    const storedLists = JSON.parse(localStorage.getItem('savedTopicLists') || '[]');
+    const updatedLists = storedLists.filter(list => list.id !== listId);
+    localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
+    
+    // Delete from Knack if authenticated
+    if (auth && userId) {
+      deleteTopicListFromKnack(listId);
+    }
+    
+    console.log(`Deleted topic list with ID: ${listId}`);
+  };
+  
+  // Delete topic list from Knack
+  const deleteTopicListFromKnack = async (listId) => {
+    try {
+      // Check if we're authenticated or have a user ID
+      const authData = localStorage.getItem('authData');
+      if (!authData) {
+        console.log("No authentication data, skipping Knack delete");
+        return;
+      }
+      
+      const auth = JSON.parse(authData);
+      if (!auth.id) {
+        console.log("No user ID found, skipping Knack delete");
+        return;
+      }
+      
+      console.log("Deleting topic list from Knack...");
+      
+      // Get existing topic lists from Knack
+      const getUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+      const getResponse = await fetch(getUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Knack-Application-ID": KNACK_APP_ID,
+          "X-Knack-REST-API-Key": KNACK_API_KEY
+        }
+      });
+      
+      if (!getResponse.ok) {
+        console.error("Failed to get Knack record:", await getResponse.json());
+        return;
+      }
+      
+      const userData = await getResponse.json();
+      
+      // Filter out the deleted list
+      if (userData.field_3011) {
+        try {
+          let knackTopicLists = JSON.parse(userData.field_3011);
+          if (Array.isArray(knackTopicLists)) {
+            knackTopicLists = knackTopicLists.filter(list => list.id !== listId);
+            
+            // Update Knack record
+            const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+            const updateResponse = await fetch(updateUrl, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Knack-Application-ID": KNACK_APP_ID,
+                "X-Knack-REST-API-Key": KNACK_API_KEY
+              },
+              body: JSON.stringify({
+                field_3011: JSON.stringify(knackTopicLists)
+              })
+            });
+            
+            if (updateResponse.ok) {
+              console.log("Topic list deleted from Knack successfully");
+            } else {
+              console.error("Failed to delete topic list from Knack:", await updateResponse.json());
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing Knack topic lists:", e);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting topic list from Knack:", error);
+    }
+  };
+
+  // Render saved topic lists
+  const renderSavedTopicLists = () => {
+    if (savedTopicLists.length === 0) {
+      return (
+        <div className="no-saved-topics">
+          <p>No saved topic lists yet</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="saved-topic-lists">
+        <h3>Saved Topic Lists</h3>
+        <div className="topic-list-grid">
+          {savedTopicLists.map(list => (
+            <div key={list.id} className="topic-list-card">
+              <h4>{list.name}</h4>
+              <div className="topic-list-details">
+                <p><strong>Exam:</strong> {list.examBoard} {list.examType}</p>
+                <p><strong>Subject:</strong> {list.subject}</p>
+                <p><strong>Topics:</strong> {list.topics.length}</p>
+                <p className="created-date">Created: {new Date(list.created).toLocaleDateString()}</p>
+              </div>
+              <div className="topic-list-actions">
+                <button onClick={() => loadTopicList(list.id)}>Load</button>
+                <button className="delete-button" onClick={() => deleteTopicList(list.id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render hierarchical topics
+  const renderHierarchicalTopics = () => {
+    if (hierarchicalTopics.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="hierarchical-topics">
+        <div className="topics-header">
+          <h3>Generated Topics</h3>
+          <div className="topic-actions">
+            <button 
+              className="save-topics-button"
+              onClick={() => setShowSaveTopicDialog(true)}
+            >
+              Save Topic List
+            </button>
+          </div>
+        </div>
+        
+        <div className="topics-list">
+          {hierarchicalTopics.map((topicData, index) => (
+            <div key={index} className="topic-card">
+              <h4>{topicData.topic}</h4>
+              <p className="topic-description">{topicData.description}</p>
+              {topicData.subTopics && topicData.subTopics.length > 0 && (
+                <div className="sub-topics">
+                  <h5>Sub-topics:</h5>
+                  <ul>
+                    {topicData.subTopics.map((subTopic, subIndex) => (
+                      <li key={subIndex}>{subTopic}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render topic save dialog
+  const renderSaveTopicDialog = () => {
+    if (!showSaveTopicDialog) {
+      return null;
+    }
+    
+    return (
+      <div className="save-topic-overlay">
+        <div className="save-topic-dialog">
+          <h3>Save Topic List</h3>
+          <div className="form-group">
+            <label>Name</label>
+            <input 
+              type="text" 
+              value={topicListName} 
+              onChange={(e) => setTopicListName(e.target.value)}
+              placeholder="Enter a name for this topic list"
+            />
+          </div>
+          {error && <div className="error-message">{error}</div>}
+          <div className="dialog-actions">
+            <button className="cancel-button" onClick={() => setShowSaveTopicDialog(false)}>Cancel</button>
+            <button className="save-button" onClick={saveTopicList}>Save</button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Handle form field changes
@@ -352,7 +719,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       case 4: // Topic
         return !!(formData.topic || formData.newTopic);
       case 5: // Number of Cards
-        return !!formData.numCards && formData.numCards >= 1 && formData.numCards <= 20;
+        return formData.numCards > 0 && formData.numCards <= 20;
       case 6: // Question Type
         return !!formData.questionType;
       default:
@@ -916,111 +1283,6 @@ Use this format for different question types:
     }
   };
 
-  // Render saved topic lists
-  const renderSavedTopicLists = () => {
-    if (savedTopicLists.length === 0) {
-      return (
-        <div className="no-saved-topics">
-          <p>No saved topic lists yet</p>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="saved-topic-lists">
-        <h3>Saved Topic Lists</h3>
-        <div className="topic-list-grid">
-          {savedTopicLists.map(list => (
-            <div key={list.id} className="topic-list-card">
-              <h4>{list.name}</h4>
-              <div className="topic-list-details">
-                <p><strong>Exam:</strong> {list.examBoard} {list.examType}</p>
-                <p><strong>Subject:</strong> {list.subject}</p>
-                <p><strong>Topics:</strong> {list.topics.length}</p>
-                <p className="created-date">Created: {new Date(list.created).toLocaleDateString()}</p>
-              </div>
-              <div className="topic-list-actions">
-                <button onClick={() => loadTopicList(list.id)}>Load</button>
-                <button className="delete-button" onClick={() => deleteTopicList(list.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render hierarchical topics
-  const renderHierarchicalTopics = () => {
-    if (hierarchicalTopics.length === 0) {
-      return null;
-    }
-    
-    return (
-      <div className="hierarchical-topics">
-        <div className="topics-header">
-          <h3>Generated Topics</h3>
-          <div className="topic-actions">
-            <button 
-              className="save-topics-button"
-              onClick={() => setShowSaveTopicDialog(true)}
-            >
-              Save Topic List
-            </button>
-          </div>
-        </div>
-        
-        <div className="topics-list">
-          {hierarchicalTopics.map((topicData, index) => (
-            <div key={index} className="topic-card">
-              <h4>{topicData.topic}</h4>
-              <p className="topic-description">{topicData.description}</p>
-              {topicData.subTopics && topicData.subTopics.length > 0 && (
-                <div className="sub-topics">
-                  <h5>Sub-topics:</h5>
-                  <ul>
-                    {topicData.subTopics.map((subTopic, subIndex) => (
-                      <li key={subIndex}>{subTopic}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render topic save dialog
-  const renderSaveTopicDialog = () => {
-    if (!showSaveTopicDialog) {
-      return null;
-    }
-    
-    return (
-      <div className="save-topic-overlay">
-        <div className="save-topic-dialog">
-          <h3>Save Topic List</h3>
-          <div className="form-group">
-            <label>Name</label>
-            <input 
-              type="text" 
-              value={topicListName} 
-              onChange={(e) => setTopicListName(e.target.value)}
-              placeholder="Enter a name for this topic list"
-            />
-          </div>
-          {error && <div className="error-message">{error}</div>}
-          <div className="dialog-actions">
-            <button className="cancel-button" onClick={() => setShowSaveTopicDialog(false)}>Cancel</button>
-            <button className="save-button" onClick={saveTopicList}>Save</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="ai-card-generator">
       {renderSaveTopicDialog()}
@@ -1044,7 +1306,13 @@ Use this format for different question types:
       </div>
       
       <div className="generator-content">
+        {/* Render saved topic lists before the step content if on step 1 */}
+        {currentStep === 1 && renderSavedTopicLists()}
+        
         {renderStepContent()}
+        
+        {/* Render hierarchical topics after topic generation in step 4 */}
+        {currentStep === 4 && hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
       </div>
       
       <div className="generator-controls">
