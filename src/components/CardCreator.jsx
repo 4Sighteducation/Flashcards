@@ -19,6 +19,7 @@ const CardCreator = ({
   const [answer, setAnswer] = useState("");
   const [keyPoints, setKeyPoints] = useState("");
   const [detailedAnswer, setDetailedAnswer] = useState("");
+  const [additionalInfo, setAdditionalInfo] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctOption, setCorrectOption] = useState("");
   const [acronym, setAcronym] = useState("");
@@ -76,105 +77,89 @@ const CardCreator = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Use new subject/topic if entered
-    const finalSubject = newSubject || subject || "General";
-    const finalTopic = newTopic || topic || "General";
-
-    // Create different card types based on questionType
-    let cardData = {
-      id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      subject: finalSubject,
-      topic: finalTopic,
-      questionType: questionType,
-      timestamp: new Date().toISOString(),
-      cardColor: cardColor,
-      baseColor: cardColor,
-    };
-
-    // Add specific fields based on question type
-    switch (questionType) {
-      case "multiple_choice":
-        cardData = {
-          ...cardData,
-          question: question,
-          options: options,
-          correctAnswer: correctOption,
-          detailedAnswer: detailedAnswer,
-        };
-        break;
-      case "short_answer":
-        cardData = {
-          ...cardData,
-          question: question,
-          keyPoints: keyPoints
-            .split(";")
-            .map((point) => point.trim())
-            .filter((point) => point),
-          detailedAnswer: detailedAnswer,
-        };
-        break;
-      case "essay":
-        cardData = {
-          ...cardData,
-          question: question,
-          keyPoints: keyPoints
-            .split(";")
-            .map((point) => point.trim())
-            .filter((point) => point),
-          detailedAnswer: detailedAnswer,
-        };
-        break;
-      case "acronym":
-        cardData = {
-          ...cardData,
-          acronym: acronym,
-          explanation: explanation,
-        };
-        break;
-      default:
-        cardData = {
-          ...cardData,
-          front: question,
-          back: answer,
-        };
+    // Validate form
+    if (!subject) {
+      alert("Please select a subject");
+      return;
     }
 
-    // Also add front/back fields for consistent rendering
-    if (!cardData.front) {
-      cardData.front =
-        questionType === "acronym" ? `Acronym: ${acronym}` : question;
+    if (!topic) {
+      alert("Please select a topic");
+      return;
     }
 
-    if (!cardData.back) {
-      if (questionType === "acronym") {
-        cardData.back = `Explanation: ${explanation}`;
-      } else if (questionType === "multiple_choice") {
-        cardData.back = `Correct Answer: ${correctOption}`;
-      } else {
-        let keyPointsHtml = "";
-        if (keyPoints && keyPoints.length > 0) {
-          keyPointsHtml =
-            "<ul>" +
-            keyPoints
-              .split(";")
-              .map((point) => point.trim())
-              .filter((point) => point)
-              .map((point) => `<li>${point}</li>`)
-              .join("") +
-            "</ul>";
-        }
-        cardData.back = keyPointsHtml;
+    if (!question) {
+      alert("Please enter a question");
+      return;
+    }
+
+    if (questionType === "multiple_choice") {
+      // Validate multiple choice
+      const filledOptions = options.filter((opt) => opt.trim() !== "");
+      if (filledOptions.length < 2) {
+        alert("Please provide at least 2 options");
+        return;
+      }
+      if (!correctOption) {
+        alert("Please select the correct option");
+        return;
+      }
+    } else if (questionType === "acronym") {
+      // Validate acronym
+      if (!acronym || !explanation) {
+        alert("Please provide both acronym and explanation");
+        return;
+      }
+    } else {
+      // Validate short answer
+      if (!answer) {
+        alert("Please provide an answer");
+        return;
       }
     }
 
-    // Update color mapping
-    updateColorMapping(finalSubject, finalTopic, cardColor);
+    // Create card data
+    const cardData = {
+      subject,
+      topic,
+      type: questionType,
+      question,
+      color: cardColor,
+    };
+
+    // Add type-specific data
+    if (questionType === "multiple_choice") {
+      cardData.options = options.filter((opt) => opt.trim() !== "");
+      cardData.correctOption = correctOption;
+    } else if (questionType === "acronym") {
+      cardData.acronym = acronym;
+      cardData.explanation = explanation;
+    } else {
+      cardData.answer = answer;
+    }
+
+    // Add optional fields if they exist
+    if (keyPoints) cardData.keyPoints = keyPoints;
+    if (detailedAnswer) cardData.detailedAnswer = detailedAnswer;
+    if (additionalInfo) cardData.additionalInfo = additionalInfo;
 
     // Add the card
     onAddCard(cardData);
 
     // Reset form
-    resetForm();
+    setSubject("");
+    setTopic("");
+    setQuestionType("short_answer");
+    setQuestion("");
+    setAnswer("");
+    setKeyPoints("");
+    setDetailedAnswer("");
+    setAdditionalInfo("");
+    setOptions(["", "", "", ""]);
+    setCorrectOption("");
+    setAcronym("");
+    setExplanation("");
+    setCardColor(currentColor);
   };
 
   // Reset the form
@@ -186,6 +171,7 @@ const CardCreator = ({
     setAnswer("");
     setKeyPoints("");
     setDetailedAnswer("");
+    setAdditionalInfo("");
     setOptions(["", "", "", ""]);
     setCorrectOption("");
     setAcronym("");
@@ -282,6 +268,14 @@ const CardCreator = ({
                   onClick={() => {
                     setCardColor(color);
                     onColorChange(color);
+                    
+                    // If we have a subject selected, update its color immediately
+                    const currentSubject = newSubject || subject;
+                    if (currentSubject) {
+                      // Update the subject color in the mapping
+                      console.log(`Updating color for subject: ${currentSubject} to ${color}`);
+                      updateColorMapping(currentSubject, null, color);
+                    }
                   }}
                 />
               ))}
@@ -297,6 +291,7 @@ const CardCreator = ({
                     if (e.target.checked) {
                       const subjectToUpdate = newSubject || subject;
                       if (subjectToUpdate) {
+                        console.log(`Applying color ${cardColor} to all topics in ${subjectToUpdate}`);
                         updateColorMapping(subjectToUpdate, null, cardColor, true);
                       }
                     }
@@ -406,6 +401,15 @@ const CardCreator = ({
                 value={detailedAnswer}
                 onChange={(e) => setDetailedAnswer(e.target.value)}
                 placeholder="Enter detailed answer"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Additional Information</label>
+              <textarea
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                placeholder="Provide additional context, examples, or resources that will be shown when the info button is clicked"
               />
             </div>
           </div>

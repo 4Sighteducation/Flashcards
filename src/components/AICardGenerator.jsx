@@ -253,28 +253,56 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Generate topics using OpenAI API
   const generateTopics = async (examBoard, examType, subject) => {
     try {
-      // Create prompt for topic generation with a flat list structure that includes subtopics
-      const prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
-      These should be actual curriculum topics in this exact subject according to this exam board's specification. 
-      Include both main topics and subtopics in a single flat list.
+      // Special prompt for Music subjects to include specific composers and works
+      let prompt;
       
-      Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
-      
-      Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
-      
-      For example, in Chemistry, you might include:
-      - "Organic Chemistry"
-      - "Organic Chemistry: Alkanes and Alkenes"
-      - "Organic Chemistry: Addition Reactions"
-      - "Periodic Table"
-      - "Periodic Table: Group 1 Elements"
-      
-      Focus on differentiation between ${examType} levels, ensuring appropriate complexity.
-      
-      Return ONLY a valid JSON array of strings with the format: 
-      ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
-      
-      IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
+      if (subject.toLowerCase().includes("music")) {
+        prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
+        These should be actual curriculum topics in this exact subject according to this exam board's specification.
+        
+        For Music, be sure to include:
+        1. Specific composers (e.g., "Berlioz", "Mozart", "Beethoven")
+        2. Specific musical works (e.g., "Berlioz: Symphonie Fantastique", "Mozart: Symphony No. 41", "Beethoven: Symphony No. 9")
+        3. Music theory concepts (e.g., "Harmony: Cadences", "Counterpoint", "Orchestration")
+        4. Historical periods (e.g., "Baroque Music", "Classical Period", "Romantic Era")
+        
+        Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
+        
+        For example:
+        - "Berlioz"
+        - "Berlioz: Symphonie Fantastique"
+        - "Berlioz: Compositional Techniques"
+        - "Music Theory"
+        - "Music Theory: Harmony and Cadences"
+        
+        Return ONLY a valid JSON array of strings with the format: 
+        ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
+        
+        IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
+      } else {
+        // Standard prompt for other subjects
+        prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
+        These should be actual curriculum topics in this exact subject according to this exam board's specification. 
+        Include both main topics and subtopics in a single flat list.
+        
+        Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
+        
+        Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
+        
+        For example, in Chemistry, you might include:
+        - "Organic Chemistry"
+        - "Organic Chemistry: Alkanes and Alkenes"
+        - "Organic Chemistry: Addition Reactions"
+        - "Periodic Table"
+        - "Periodic Table: Group 1 Elements"
+        
+        Focus on differentiation between ${examType} levels, ensuring appropriate complexity.
+        
+        Return ONLY a valid JSON array of strings with the format: 
+        ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
+        
+        IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
+      }
       
       console.log("Generating topics with prompt:", prompt);
       

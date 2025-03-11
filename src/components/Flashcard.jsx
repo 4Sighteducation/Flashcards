@@ -153,6 +153,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
   const [isFlipped, setIsFlipped] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const cardRef = useRef(null);
   
   // Apply card styles based on card data
@@ -168,7 +169,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
   // Handle card flipping
   const handleFlip = (e) => {
     // Don't flip if clicking on buttons
-    if (e.target.closest('.card-controls') || e.target.closest('.color-picker-container')) return;
+    if (e.target.closest('.card-controls') || e.target.closest('.color-picker-container') || e.target.closest('.info-btn')) return;
     
     setIsFlipped(!isFlipped);
     if (onFlip) onFlip(card, !isFlipped);
@@ -198,6 +199,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
     setShowColorPicker(!showColorPicker);
   };
   
+  // Toggle info modal
+  const toggleInfoModal = (e) => {
+    e.stopPropagation();
+    setShowInfoModal(!showInfoModal);
+  };
+  
+  // Close info modal
+  const closeInfoModal = () => {
+    setShowInfoModal(false);
+  };
+  
   // Handle color change
   const handleColorChange = (color) => {
     if (onUpdateCard) {
@@ -220,86 +232,124 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
   // Determine if this is a multiple choice card
   const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options);
   
+  // Check if card has additional information
+  const hasAdditionalInfo = card.additionalInfo || card.notes;
+  
   return (
-    <div 
-      ref={cardRef}
-      className={`flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''}`}
-      onClick={handleFlip}
-      style={cardStyle}
-    >
-      {showButtons && (
-        <div className="card-controls">
-          {confirmDelete ? (
-            <div className="delete-confirm">
-              <span style={{ color: textColor }}>Delete?</span>
-              <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
-              <button onClick={cancelDelete} className="cancel-btn">No</button>
-            </div>
-          ) : (
-            <>
-              <button 
-                className="delete-btn" 
-                onClick={handleDeleteClick}
-                style={{ color: textColor }}
-              >
-                ✕
-              </button>
-              <button 
-                className="color-btn" 
-                onClick={toggleColorPicker}
-                style={{ color: textColor }}
-              >
-                🎨
-              </button>
-            </>
-          )}
-          
-          {showColorPicker && (
-            <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
-              <div className="color-options">
-                {colorOptions.map((color) => (
-                  <div 
-                    key={color}
-                    className="color-option"
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorChange(color)}
-                  />
-                ))}
+    <>
+      <div 
+        ref={cardRef}
+        className={`flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''}`}
+        onClick={handleFlip}
+        style={cardStyle}
+      >
+        {showButtons && (
+          <div className="card-controls">
+            {confirmDelete ? (
+              <div className="delete-confirm">
+                <span style={{ color: textColor }}>Delete?</span>
+                <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
+                <button onClick={cancelDelete} className="cancel-btn">No</button>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      <div className="flashcard-inner">
-        <div className="flashcard-front" style={{ color: textColor }}>
-          {isMultipleChoice ? (
-            <>
-              <ScaledText className="question-title" maxFontSize={16}>
-                {card.front || card.question}
-              </ScaledText>
-              <MultipleChoiceOptions options={card.options} />
-            </>
-          ) : (
-            <ScaledText maxFontSize={16}>
-              <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
-            </ScaledText>
-          )}
-        </div>
+            ) : (
+              <>
+                <button 
+                  className="delete-btn" 
+                  onClick={handleDeleteClick}
+                  style={{ color: textColor }}
+                >
+                  ✕
+                </button>
+                <button 
+                  className="color-btn" 
+                  onClick={toggleColorPicker}
+                  style={{ color: textColor }}
+                >
+                  🎨
+                </button>
+                {hasAdditionalInfo && (
+                  <button 
+                    className="info-btn" 
+                    onClick={toggleInfoModal}
+                    style={{ color: textColor }}
+                  >
+                    ℹ️
+                  </button>
+                )}
+              </>
+            )}
+            
+            {showColorPicker && (
+              <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
+                <div className="color-options">
+                  {colorOptions.map((color) => (
+                    <div 
+                      key={color}
+                      className="color-option"
+                      style={{ backgroundColor: color }}
+                      onClick={() => handleColorChange(color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
-        <div className="flashcard-back">
-          <ScaledText maxFontSize={14}>
-            <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
-          </ScaledText>
+        <div className="flashcard-inner">
+          <div className="flashcard-front" style={{ color: textColor }}>
+            {isMultipleChoice ? (
+              <>
+                <ScaledText className="question-title" maxFontSize={16}>
+                  {card.front || card.question}
+                </ScaledText>
+                <MultipleChoiceOptions options={card.options} />
+              </>
+            ) : (
+              <ScaledText maxFontSize={16}>
+                <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
+              </ScaledText>
+            )}
+          </div>
           
-          {card.boxNum !== undefined && (
-            <div className="box-indicator">
-              Box {card.boxNum}
-            </div>
-          )}
+          <div className="flashcard-back">
+            <ScaledText maxFontSize={14}>
+              <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
+            </ScaledText>
+            
+            {card.additionalInfo && (
+              <div className="additional-info">
+                <h4 style={{ marginTop: '10px', fontSize: '12px' }}>Additional Information:</h4>
+                <ScaledText maxFontSize={12}>
+                  <div dangerouslySetInnerHTML={{ __html: card.additionalInfo }} />
+                </ScaledText>
+              </div>
+            )}
+            
+            {card.boxNum !== undefined && (
+              <div className="box-indicator">
+                Box {card.boxNum}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Information Modal */}
+      {showInfoModal && (
+        <div className="info-modal-overlay" onClick={closeInfoModal}>
+          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="info-modal-header">
+              <h3>Additional Information</h3>
+              <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
+            </div>
+            <div className="info-modal-content">
+              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.notes || "No additional information available." }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

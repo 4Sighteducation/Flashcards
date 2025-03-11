@@ -71,14 +71,13 @@ const SpacedRepetition = ({
         return true;
       });
       
-      // Check review dates and sort by availability
+      console.log(`Filtered cards for box ${currentBox}:`, filtered);
+      
+      // Check review dates but don't filter out cards that aren't ready
       const today = new Date();
       
-      // Separate cards into ready for review and not ready
-      const readyForReview = [];
-      const notReadyForReview = [];
-      
-      filtered.forEach(card => {
+      // Mark cards as reviewable or not, but include all of them
+      const cardsWithReviewStatus = filtered.map(card => {
         // Find the card in the spacedRepetitionData
         const boxCard = spacedRepetitionData[`box${currentBox}`]?.find(
           boxCard => boxCard.cardId === card.id
@@ -88,41 +87,43 @@ const SpacedRepetition = ({
           const nextReviewDate = new Date(boxCard.nextReviewDate);
           
           // Add a property to indicate if the card is reviewable
-          const reviewableCard = {
+          return {
             ...card,
             isReviewable: nextReviewDate <= today,
             nextReviewDate: boxCard.nextReviewDate
           };
-          
-          if (reviewableCard.isReviewable) {
-            readyForReview.push(reviewableCard);
-          } else {
-            notReadyForReview.push(reviewableCard);
-          }
         } else {
           // If no review date, assume it's reviewable
-          readyForReview.push({
+          return {
             ...card,
             isReviewable: true
-          });
+          };
         }
       });
       
-      // Sort ready cards first, then not ready
-      setFilteredCards([...readyForReview, ...notReadyForReview]);
+      // Sort reviewable cards first, then non-reviewable
+      const sortedCards = [
+        ...cardsWithReviewStatus.filter(card => card.isReviewable),
+        ...cardsWithReviewStatus.filter(card => !card.isReviewable)
+      ];
+      
+      setFilteredCards(sortedCards);
+      console.log("Filtered and sorted cards:", sortedCards);
     } else {
       setFilteredCards([]);
     }
   }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData]);
 
-  // Update current cards
+  // Update current cards - include ALL cards, not just reviewable ones
   useEffect(() => {
     // Reset index when cards change
     setCurrentIndex(0);
     setShowFlipResponse(false);
     setIsFlipped(false);
     setStudyCompleted(false);
-    setCurrentCards(filteredCards.filter(card => card.isReviewable));
+    
+    // Include all cards, not just reviewable ones
+    setCurrentCards(filteredCards);
     console.log("SpacedRepetition - Updated current cards:", filteredCards);
   }, [filteredCards]);
 
@@ -533,6 +534,12 @@ const SpacedRepetition = ({
                       "No answer"
                   }}
                 />
+                {currentCards[currentIndex].additionalInfo && (
+                  <div className="additional-info">
+                    <h4>Additional Information:</h4>
+                    <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo }} />
+                  </div>
+                )}
                 {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               </div>
             </div>
