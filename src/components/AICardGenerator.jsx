@@ -1147,7 +1147,7 @@ Use this format for different question types:
           </div>
         );
         
-      case 7: // Confirmation
+      case 7: // Confirmation and Generated Cards
         return renderConfirmation();
         
       default:
@@ -1228,7 +1228,7 @@ Use this format for different question types:
     setCompletedSteps(newCompletedSteps);
   }, [currentStep, formData]);
 
-  // Step 7: Confirmation Step
+  // Step 7: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
     return (
       <div className="step-content confirmation-step">
@@ -1278,15 +1278,80 @@ Use this format for different question types:
           </div>
         </div>
         
-        <div className="confirmation-actions">
-          <button 
-            className="generate-button"
-            onClick={generateCards}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "Generating..." : "Generate Cards"}
-          </button>
-        </div>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+        
+        {isGenerating ? (
+          <div className="loading-indicator">
+            <p>Generating your cards...</p>
+            <div className="spinner"></div>
+          </div>
+        ) : generatedCards.length > 0 ? (
+          <>
+            <div className="generated-cards-actions">
+              <button className="primary-button" onClick={handleAddAllCards}>
+                Add All to Card Bank
+              </button>
+              <button className="secondary-button" onClick={handleRegenerateCards}>
+                Regenerate Cards
+              </button>
+            </div>
+            
+            <div className="generated-cards-container">
+              {generatedCards.map(card => (
+                <div 
+                  key={card.id} 
+                  className="generated-card" 
+                  style={{ 
+                    backgroundColor: card.cardColor,
+                    color: getContrastColor(card.cardColor)
+                  }}
+                >
+                  <div className="card-header">
+                    {card.questionType === "multiple_choice" ? "Multiple Choice" : 
+                     card.questionType === "short_answer" ? "Short Answer" : 
+                     card.questionType === "essay" ? "Essay" : "Acronym"}
+                    
+                    <button 
+                      className="add-card-btn" 
+                      onClick={() => handleAddCard(card)}
+                      disabled={card.added}
+                    >
+                      {card.added ? "Added" : "Add to Bank"}
+                    </button>
+                  </div>
+                  
+                  <h3>{card.front}</h3>
+                  
+                  <div className="card-preview">
+                    {card.questionType === "multiple_choice" && card.options && (
+                      <div className="card-options">
+                        {card.options.map((option, idx) => (
+                          <div key={idx} className="card-option">
+                            {option}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="confirmation-actions">
+            <button 
+              className="generate-button"
+              onClick={generateCards}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating..." : "Generate Cards"}
+            </button>
+          </div>
+        )}
       </div>
     );
   };

@@ -96,9 +96,13 @@ For subjects with optional routes/topics (e.g., History with different period op
  */
 const SIMPLIFIED_TOPIC_EXTRACTION_PROMPT = `Return only a valid JSON array with no additional text. Search for the full syllabus topic list for {examBoard} {examType} {subject}, default to the current academic year specification if no update is available. 
 
-List topic areas and subtopics as distinct items, formatted exactly as: ["Topic Area: Subtopic", "Topic Area: Subtopic", ...].
+List topic areas and their subtopics in a hierarchical format. For each main topic area, list its subtopics as: "Topic Area: Subtopic".
 
-Only include the official topics from the syllabus, not generic subject areas. Be comprehensive and include all topics and subtopics from the specification.
+Group related subtopics under their main topic area and ensure the format is exactly:
+["Topic Area: Subtopic 1", "Topic Area: Subtopic 2", "Another Topic Area: Subtopic 1", ...].
+
+Ensure each main topic appears multiple times (once for each of its subtopics) to preserve the hierarchy.
+Be comprehensive and include all topics and subtopics from the official specification.
 `;
 
 /**
