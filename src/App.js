@@ -502,59 +502,46 @@ function App() {
     const boxItems = spacedRepetitionData[boxKey] || [];
     console.log(`Getting cards for box ${currentBox}:`, boxKey, boxItems);
     
-    const cardIds = boxItems.map(item => item.cardId);
-    console.log(`Card IDs in box ${currentBox}:`, cardIds);
-    console.log("All available cards:", allCards.map(card => ({ id: card.id, subject: card.subject, topic: card.topic })));
-    
-    if (cardIds.length === 0) {
+    // If we have no cards in this box, return empty array
+    if (boxItems.length === 0) {
       console.log(`No cards found in box ${currentBox}`);
       return [];
     }
     
+    // Log all card information to help debug
+    console.log("All available cards:", allCards.length, allCards.map(c => c.id).slice(0, 10));
+    
     // Map the IDs to the actual card objects
-    const cardsForBox = cardIds
-      .map(cardId => {
-        const stringCardId = String(cardId).trim();
-        const card = allCards.find(card => String(card.id).trim() === stringCardId);
-        
-        if (!card) {
-          console.warn(`Card with ID ${cardId} not found in allCards`);
-        } else {
-          console.log(`Found card for ID ${cardId}:`, card);
-        }
-        
-        return card;
-      })
-      .filter(card => card !== undefined);
+    const cardsForBox = [];
     
-    console.log(`Found ${cardsForBox.length} valid cards for box ${currentBox}:`, cardsForBox);
-    
-    // If we found cards, return them
-    if (cardsForBox.length > 0) {
-      return cardsForBox;
-    }
-    
-    // If we still don't have cards, try a more exhaustive approach
-    console.log("Trying more exhaustive matching for card IDs");
-    
-    const exhaustiveCards = [];
+    // Process each item in the box (which should be string IDs based on your JSON example)
     for (const boxItem of boxItems) {
-      for (const card of allCards) {
-        // Try multiple ways of comparing
-        if (
-          String(boxItem.cardId).trim() === String(card.id).trim() ||
-          boxItem.cardId === card.id ||
-          (typeof boxItem.cardId === 'object' && boxItem.cardId.cardId === card.id)
-        ) {
-          console.log(`Exhaustive matching found card:`, card);
-          exhaustiveCards.push(card);
-          break;
-        }
+      // Get the ID (handle both string and object formats for backward compatibility)
+      const cardId = typeof boxItem === 'string' ? boxItem : 
+                    (boxItem && boxItem.cardId ? boxItem.cardId : null);
+      
+      if (!cardId) {
+        console.warn("Empty card ID found in box, skipping");
+        continue;
+      }
+      
+      // Find the matching card
+      const matchingCard = allCards.find(card => {
+        // Try multiple matching approaches
+        return card.id === cardId || 
+              String(card.id).trim() === String(cardId).trim();
+      });
+      
+      if (matchingCard) {
+        console.log(`Found card for ID ${cardId}:`, matchingCard.subject, matchingCard.topic);
+        cardsForBox.push(matchingCard);
+      } else {
+        console.warn(`Card with ID ${cardId} not found in allCards (total: ${allCards.length})`);
       }
     }
     
-    console.log(`Exhaustive matching found ${exhaustiveCards.length} cards:`, exhaustiveCards);
-    return exhaustiveCards;
+    console.log(`Found ${cardsForBox.length} valid cards for box ${currentBox} out of ${boxItems.length} IDs`);
+    return cardsForBox;
   }, [currentBox, spacedRepetitionData, allCards]);
 
   // Extract unique subjects from all cards
