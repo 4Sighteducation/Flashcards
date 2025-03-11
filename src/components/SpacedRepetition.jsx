@@ -55,15 +55,7 @@ const SpacedRepetition = ({
       let filtered = cards.filter(card => {
         // First check if card is in the current box
         const cardInBox = spacedRepetitionData[`box${currentBox}`]?.some(
-          boxCardId => {
-            // Handle both formats: string IDs or objects with cardId
-            if (typeof boxCardId === 'string') {
-              return boxCardId === card.id;
-            } else if (boxCardId && typeof boxCardId === 'object') {
-              return boxCardId.cardId === card.id;
-            }
-            return false;
-          }
+          boxItem => String(boxItem) === card.id
         );
         
         // If not in the box, exclude it
@@ -87,41 +79,16 @@ const SpacedRepetition = ({
       // Check review dates but don't filter out cards that aren't ready
       const today = new Date();
       
-      // Mark cards as reviewable or not, but include all of them
+      // Since we're only storing IDs, all cards are considered reviewable
       const cardsWithReviewStatus = filtered.map(card => {
-        // Find the card in the spacedRepetitionData
-        const boxCard = typeof spacedRepetitionData[`box${currentBox}`][0] === 'string' 
-          ? { cardId: card.id, isReviewable: true } // If we're using string IDs, assume reviewable
-          : spacedRepetitionData[`box${currentBox}`]?.find(
-              boxCard => boxCard.cardId === card.id
-            );
-        
-        if (boxCard && boxCard.nextReviewDate) {
-          const nextReviewDate = new Date(boxCard.nextReviewDate);
-          
-          // Add a property to indicate if the card is reviewable
-          return {
-            ...card,
-            isReviewable: nextReviewDate <= today,
-            nextReviewDate: boxCard.nextReviewDate
-          };
-        } else {
-          // If no review date, assume it's reviewable
-          return {
-            ...card,
-            isReviewable: true
-          };
-        }
+        return {
+          ...card,
+          isReviewable: true
+        };
       });
       
-      // Sort reviewable cards first, then non-reviewable
-      const sortedCards = [
-        ...cardsWithReviewStatus.filter(card => card.isReviewable),
-        ...cardsWithReviewStatus.filter(card => !card.isReviewable)
-      ];
-      
-      setFilteredCards(sortedCards);
-      console.log("Filtered and sorted cards:", sortedCards);
+      setFilteredCards(cardsWithReviewStatus);
+      console.log("Filtered and sorted cards:", cardsWithReviewStatus);
     } else {
       setFilteredCards([]);
     }

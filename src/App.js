@@ -368,6 +368,34 @@ function App() {
     (cardId, box) => {
       console.log(`Moving card ${cardId} to box ${box}`);
 
+      // Calculate the next review date based on the box number
+      const calculateNextReviewDate = (boxNumber) => {
+        const today = new Date();
+        let nextDate = new Date(today);
+        
+        switch (boxNumber) {
+          case 1: // Review next day
+            nextDate.setDate(today.getDate() + 1);
+            break;
+          case 2: // Every 2 days
+            nextDate.setDate(today.getDate() + 2);
+            break;
+          case 3: // Every 3 days
+            nextDate.setDate(today.getDate() + 3);
+            break;
+          case 4: // Every 7 days
+            nextDate.setDate(today.getDate() + 7);
+            break;
+          case 5: // Retired, but check after 21 days
+            nextDate.setDate(today.getDate() + 21);
+            break;
+          default:
+            nextDate.setDate(today.getDate() + 1);
+        }
+        
+        return nextDate.toISOString();
+      };
+
       // Ensure cardId is a string
       const stringCardId = String(cardId).trim();
       
@@ -378,18 +406,11 @@ function App() {
         // Remove the card from its current box (if it exists)
         for (let i = 1; i <= 5; i++) {
           newData[`box${i}`] = newData[`box${i}`].filter(
-            (item) => {
-              if (typeof item === 'string') {
-                return item !== stringCardId;
-              } else if (item && typeof item === 'object') {
-                return String(item.cardId).trim() !== stringCardId;
-              }
-              return true;
-            }
+            (item) => String(item) !== stringCardId
           );
         }
 
-        // Add the card to the new box - store as string ID for compatibility
+        // Add the card to the new box - store as string ID only
         const targetBox = `box${box}`;
         newData[targetBox].push(stringCardId);
 
