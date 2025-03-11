@@ -634,17 +634,22 @@
   position: absolute;
   top: 10px;
   left: 10px;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
+  background-color: rgba(0, 100, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-size: 1.5rem;
+  padding: 2px 8px;
+  border-radius: 50%;
   cursor: pointer;
   z-index: 10;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .info-btn:hover {
-  opacity: 1;
+  background-color: rgba(0, 100, 255, 0.4);
+  transform: scale(1.1);
 }
 
 .info-modal-overlay {

@@ -103,6 +103,17 @@ const SpacedRepetition = ({
     // Use all filtered cards regardless of review state
     setCurrentCards(filteredCards);
     
+    // Debug log for additionalInfo
+    console.log("Cards with additionalInfo:", filteredCards.filter(card => card.additionalInfo).length);
+    if (filteredCards.length > 0) {
+      console.log("First card details:", {
+        id: filteredCards[0].id,
+        subject: filteredCards[0].subject,
+        additionalInfo: filteredCards[0].additionalInfo,
+        keys: Object.keys(filteredCards[0])
+      });
+    }
+    
     console.log("Current cards updated:", filteredCards);
   }, [filteredCards]);
 
@@ -497,7 +508,6 @@ const SpacedRepetition = ({
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
-                    style={{ position: 'absolute', top: '10px', left: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
                   >
                     ℹ️
                   </button>
