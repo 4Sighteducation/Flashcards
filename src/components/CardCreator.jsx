@@ -286,6 +286,26 @@ const CardCreator = ({
                 />
               ))}
             </div>
+            
+            <div className="color-apply-options">
+              <label className="checkbox-container">
+                <input 
+                  type="checkbox" 
+                  id="applyToAllTopics"
+                  onChange={(e) => {
+                    // If checkbox is checked, update all topic colors for this subject
+                    if (e.target.checked) {
+                      const subjectToUpdate = newSubject || subject;
+                      if (subjectToUpdate) {
+                        updateColorMapping(subjectToUpdate, null, cardColor, true);
+                      }
+                    }
+                  }}
+                />
+                <span className="checkmark"></span>
+                Apply this color to all topics in this subject
+              </label>
+            </div>
           </div>
         </div>
 

@@ -78,9 +78,50 @@ function App() {
     setSpacedRepetitionData(newSpacedRepetitionData);
   }, []);
 
+  // Generate a shade of a base color
+  const generateShade = useCallback((baseColor, shadeIndex, totalShades) => {
+    // Convert hex to RGB
+    const r = parseInt(baseColor.slice(1, 3), 16);
+    const g = parseInt(baseColor.slice(3, 5), 16);
+    const b = parseInt(baseColor.slice(5, 7), 16);
+    
+    // Calculate lightness adjustment based on shade index
+    // Using a range from -20% (darker) to +30% (lighter)
+    const adjustment = -20 + (50 * (shadeIndex / (totalShades - 1)));
+    
+    // Apply adjustment to RGB values
+    let adjustedR = Math.min(255, Math.max(0, r * (1 + adjustment/100)));
+    let adjustedG = Math.min(255, Math.max(0, g * (1 + adjustment/100)));
+    let adjustedB = Math.min(255, Math.max(0, b * (1 + adjustment/100)));
+    
+    // Convert back to hex
+    const adjustedHex = '#' + 
+      Math.round(adjustedR).toString(16).padStart(2, '0') +
+      Math.round(adjustedG).toString(16).padStart(2, '0') +
+      Math.round(adjustedB).toString(16).padStart(2, '0');
+    
+    return adjustedHex;
+  }, []);
+
+  // Extract unique topics for a selected subject
+  const getTopicsForSubject = useCallback(
+    (subject) => {
+      if (!subject) return [];
+      const topics = [
+        ...new Set(
+          allCards
+            .filter((card) => (card.subject || "General") === subject)
+            .map((card) => card.topic || "General")
+        ),
+      ];
+      return topics.sort();
+    },
+    [allCards]
+  );
+
   // Update color mappings - independent of other functions
   const updateColorMapping = useCallback(
-    (subject, topic, color) => {
+    (subject, topic, color, updateTopics = false) => {
       setSubjectColorMapping((prevMapping) => {
         const newMapping = { ...prevMapping };
 
@@ -89,21 +130,60 @@ function App() {
           newMapping[subject] = { base: color, topics: {} };
         }
 
-        // If a topic is provided, update the topic color
-        if (topic) {
+        // If it's a subject-level color update
+        if (!topic || updateTopics) {
+          // Update the base subject color
+          newMapping[subject].base = color;
+          
+          // If we should update topic colors automatically
+          if (updateTopics) {
+            console.log(`Updating all topic colors for subject ${subject} based on ${color}`);
+            
+            // Get all topics for this subject from current cards
+            const topicsForSubject = allCards
+              .filter(card => (card.subject || "General") === subject)
+              .map(card => card.topic || "General");
+            
+            // Remove duplicates and sort
+            const uniqueTopics = [...new Set(topicsForSubject)].sort();
+            
+            console.log(`Found topics for subject ${subject}:`, uniqueTopics);
+            
+            // Generate a color for each topic
+            if (uniqueTopics.length > 0) {
+              uniqueTopics.forEach((topicName, index) => {
+                // Skip the "General" topic as it should use the base color
+                if (topicName === "General") return;
+                
+                // Generate a shade of the base color for this topic
+                const topicColor = generateShade(color, index, uniqueTopics.length);
+                console.log(`Generated color for ${topicName}: ${topicColor}`);
+                
+                // Ensure the topics object exists
+                if (!newMapping[subject].topics) {
+                  newMapping[subject].topics = {};
+                }
+                
+                // Update the topic color
+                newMapping[subject].topics[topicName] = topicColor;
+              });
+            }
+          }
+        } 
+        // If it's a topic-level color update
+        else if (topic) {
+          // Ensure the topics object exists
           if (!newMapping[subject].topics) {
             newMapping[subject].topics = {};
           }
+          // Update the specified topic color
           newMapping[subject].topics[topic] = color;
-        } else {
-          // Otherwise just update the base subject color
-          newMapping[subject].base = color;
         }
         
         return newMapping;
       });
     },
-    []
+    [allCards, generateShade]
   );
 
   // Save data to localStorage fallback - dependent on state only
@@ -319,13 +399,43 @@ function App() {
     }
     
     console.log(`Getting cards for box ${currentBox}: IDs`, cardIds);
+    console.log("All available cards:", allCards.map(card => card.id));
     
     // Map the IDs to the actual card objects
-    const cardsForBox = cardIds.map(cardId => 
-      allCards.find(card => card.id === cardId)
-    ).filter(card => card !== undefined);
+    const cardsForBox = cardIds
+      .map(cardId => {
+        const card = allCards.find(card => card.id === cardId);
+        if (!card) {
+          console.warn(`Card with ID ${cardId} not found in allCards`);
+        }
+        return card;
+      })
+      .filter(card => card !== undefined);
     
     console.log(`Found ${cardsForBox.length} valid cards for box ${currentBox}`, cardsForBox);
+    
+    // If we didn't find any cards but we have IDs, it might be a string comparison issue
+    if (cardsForBox.length === 0 && cardIds.length > 0) {
+      console.log("Trying alternative matching method for card IDs");
+      
+      // Try a more flexible matching approach by trimming and comparing as strings
+      const alternativeCardsForBox = cardIds
+        .map(cardId => {
+          const cardIdStr = String(cardId).trim();
+          const card = allCards.find(card => String(card.id).trim() === cardIdStr);
+          if (!card) {
+            console.warn(`Card with ID ${cardId} not found in allCards even with string comparison`);
+          }
+          return card;
+        })
+        .filter(card => card !== undefined);
+      
+      console.log(`Alternative matching found ${alternativeCardsForBox.length} cards`, alternativeCardsForBox);
+      
+      if (alternativeCardsForBox.length > 0) {
+        return alternativeCardsForBox;
+      }
+    }
     
     return cardsForBox;
   }, [currentBox, spacedRepetitionData, allCards]);
@@ -337,22 +447,6 @@ function App() {
     ];
     return subjects.sort();
   }, [allCards]);
-
-  // Extract unique topics for a selected subject
-  const getTopicsForSubject = useCallback(
-    (subject) => {
-      if (!subject) return [];
-      const topics = [
-        ...new Set(
-          allCards
-            .filter((card) => (card.subject || "General") === subject)
-            .map((card) => card.topic || "General")
-        ),
-      ];
-      return topics.sort();
-    },
-    [allCards]
-  );
 
   // Filter cards by subject and topic
   const getFilteredCards = useCallback(() => {
