@@ -57,6 +57,45 @@ function App() {
     setTimeout(() => setStatusMessage(""), duration);
   }, []);
 
+  // Load data from localStorage fallback
+  const loadFromLocalStorage = useCallback(() => {
+    try {
+      const savedCards = localStorage.getItem('flashcards');
+      const savedColorMapping = localStorage.getItem('colorMapping');
+      const savedSpacedRepetition = localStorage.getItem('spacedRepetition');
+      
+      if (savedCards) {
+        const parsedCards = JSON.parse(savedCards);
+        setAllCards(parsedCards);
+        updateSpacedRepetitionData(parsedCards);
+      }
+      
+      if (savedColorMapping) {
+        setSubjectColorMapping(JSON.parse(savedColorMapping));
+      }
+      
+      if (savedSpacedRepetition) {
+        setSpacedRepetitionData(JSON.parse(savedSpacedRepetition));
+      }
+      
+      console.log("Loaded data from localStorage");
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+    }
+  }, []);
+
+  // Save data to localStorage fallback
+  const saveToLocalStorage = useCallback(() => {
+    try {
+      localStorage.setItem('flashcards', JSON.stringify(allCards));
+      localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
+      localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
+      console.log("Saved data to localStorage");
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
+  }, [allCards, subjectColorMapping, spacedRepetitionData]);
+
   // Load data from Knack
   const loadData = useCallback(async () => {
     if (!auth) return;
@@ -67,13 +106,16 @@ function App() {
     try {
       // Data will be loaded through the Knack integration script
       // We just wait for messages from the parent window
+      
+      // Load from localStorage as fallback
+      loadFromLocalStorage();
     } catch (error) {
       console.error("Error loading data:", error);
       setError("Failed to load your flashcards. Please refresh and try again.");
     } finally {
       setLoading(false);
     }
-  }, [auth]);
+  }, [auth, loadFromLocalStorage]);
 
   // Save data to Knack
   const saveData = useCallback(() => {
@@ -98,75 +140,91 @@ function App() {
 
         showStatus("Saving your flashcards...");
       }
+      
+      // Always save to localStorage as fallback
+      saveToLocalStorage();
+      
+      // If we're in standalone mode, mark as saved
+      if (window.parent === window) {
+        setIsSaving(false);
+        showStatus("Saved successfully!");
+      }
     } catch (error) {
       console.error("Error saving data:", error);
-      showStatus("Error saving your flashcards. Please try again.");
-    } finally {
-      setTimeout(() => setIsSaving(false), 1000);
+      setIsSaving(false);
+      showStatus("Error saving data");
     }
-  }, [allCards, subjectColorMapping, spacedRepetitionData, auth, showStatus]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage]);
 
-  // Add new card to collection
+  // Add a new card
   const addCard = useCallback(
-    (newCard) => {
+    (card) => {
       setAllCards((prevCards) => {
-        const updatedCards = [
-          ...prevCards,
-          {
-            ...newCard,
-            id:
-              newCard.id ||
-              `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: new Date().toISOString(),
-            boxNum: newCard.boxNum || 1,
-            SRFlag:
-              typeof newCard.SRFlag !== "undefined" ? newCard.SRFlag : false,
-          },
-        ];
-
-        // Schedule a save after adding
-        setTimeout(() => saveData(), 500);
-
-        return updatedCards;
+        const newCards = [...prevCards, card];
+        
+        // Update the card in the appropriate box for spaced repetition
+        const boxNum = card.boxNum || 1;
+        updateSpacedRepetitionData(newCards);
+        
+        // Save immediately when adding a card
+        setTimeout(() => saveData(), 100);
+        
+        return newCards;
       });
-
+      
+      // Update color mapping if needed
+      if (card.subject && card.cardColor) {
+        updateColorMapping(card.subject, card.topic, card.cardColor);
+      }
+      
       showStatus("Card added successfully!");
     },
-    [saveData, showStatus]
+    [updateSpacedRepetitionData, saveData, updateColorMapping, showStatus]
   );
 
-  // Delete card from collection
+  // Delete a card
   const deleteCard = useCallback(
     (cardId) => {
       setAllCards((prevCards) => {
-        const updatedCards = prevCards.filter((card) => card.id !== cardId);
-
-        // Schedule a save after deleting
-        setTimeout(() => saveData(), 500);
-
-        return updatedCards;
+        const newCards = prevCards.filter((card) => card.id !== cardId);
+        updateSpacedRepetitionData(newCards);
+        
+        // Save immediately when deleting a card
+        setTimeout(() => saveData(), 100);
+        
+        return newCards;
       });
-
-      showStatus("Card deleted!");
+      
+      showStatus("Card deleted");
     },
-    [saveData, showStatus]
+    [updateSpacedRepetitionData, saveData, showStatus]
   );
 
   // Update card properties
   const updateCard = useCallback(
-    (cardId, updates) => {
+    (updatedCard) => {
       setAllCards((prevCards) => {
         const updatedCards = prevCards.map((card) =>
-          card.id === cardId ? { ...card, ...updates } : card
+          card.id === updatedCard.id ? { ...card, ...updatedCard } : card
         );
 
-        // Schedule a save after updating
-        setTimeout(() => saveData(), 500);
+        // Update spaced repetition data
+        updateSpacedRepetitionData(updatedCards);
+        
+        // Save immediately when updating a card
+        setTimeout(() => saveData(), 100);
 
         return updatedCards;
       });
+      
+      // Update color mapping if color changed
+      if (updatedCard.subject && updatedCard.cardColor) {
+        updateColorMapping(updatedCard.subject, updatedCard.topic, updatedCard.cardColor);
+      }
+      
+      showStatus("Card updated");
     },
-    [saveData]
+    [saveData, updateSpacedRepetitionData, updateColorMapping, showStatus]
   );
 
   // Move card between spaced repetition boxes

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
+import Flashcard from './Flashcard';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -90,25 +91,80 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
   // Effect to update available topics when subject changes
   useEffect(() => {
     // In a real implementation, this would typically be an API call to get topics for the subject
-    // For demo purposes, we'll simulate loading topics
-    if (formData.subject) {
+    if (formData.subject && formData.examBoard && formData.examType) {
       setIsGenerating(true);
-      // Simulate API call
-      setTimeout(() => {
-        const demoTopics = [
-          `${formData.subject} - Topic 1`,
-          `${formData.subject} - Topic 2`,
-          `${formData.subject} - Topic 3`,
-          `${formData.subject} - Advanced Concepts`,
-          `${formData.subject} - Practical Applications`
-        ];
-        setAvailableTopics(demoTopics);
-        setIsGenerating(false);
-      }, 500);
+      generateTopics(formData.examBoard, formData.examType, formData.subject)
+        .then(topics => {
+          setAvailableTopics(topics);
+          setIsGenerating(false);
+        })
+        .catch(error => {
+          console.error("Error generating topics:", error);
+          // Fallback to demo topics if generation fails
+          const demoTopics = [
+            `${formData.subject} - Topic 1`,
+            `${formData.subject} - Topic 2`,
+            `${formData.subject} - Topic 3`,
+            `${formData.subject} - Advanced Concepts`,
+            `${formData.subject} - Practical Applications`
+          ];
+          setAvailableTopics(demoTopics);
+          setIsGenerating(false);
+        });
     } else {
       setAvailableTopics([]);
     }
-  }, [formData.subject]);
+  }, [formData.subject, formData.examBoard, formData.examType]);
+
+  // Generate topics using OpenAI API
+  const generateTopics = async (examBoard, examType, subject) => {
+    try {
+      // Create prompt for topic generation
+      const prompt = `Generate a list of 8-10 specific topics for ${examBoard} ${examType} ${subject}. These should be actual curriculum topics that would be covered in this subject. Return ONLY a valid JSON array of strings with no additional text, like this: ["Topic 1", "Topic 2", "Topic 3"]`;
+      
+      // Make the API call to OpenAI
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 500,
+          temperature: 0.3
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Error calling OpenAI API");
+      }
+      
+      // Parse the response
+      const content = data.choices[0].message.content;
+      const cleanedContent = cleanOpenAIResponse(content);
+      
+      let topics;
+      try {
+        topics = JSON.parse(cleanedContent);
+      } catch (e) {
+        console.error("Error parsing OpenAI response for topics:", e);
+        throw new Error("Failed to parse AI response for topics. Please try again.");
+      }
+      
+      if (!Array.isArray(topics) || topics.length === 0) {
+        throw new Error("Invalid response format from AI for topics. Please try again.");
+      }
+      
+      return topics;
+    } catch (error) {
+      console.error("Error generating topics:", error);
+      throw error;
+    }
+  };
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -514,23 +570,40 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
         return (
           <div className="step-content">
             <h2>Select Question Type</h2>
-            <div className="form-group question-type-group">
+            <div className="question-type-selector">
               {QUESTION_TYPES.map(type => (
                 <div key={type.value} className="question-type-option">
-                  <input 
-                    type="radio" 
-                    id={type.value} 
-                    name="questionType" 
-                    value={type.value} 
+                  <input
+                    type="radio"
+                    id={`question-type-${type.value}`}
+                    name="questionType"
+                    value={type.value}
                     checked={formData.questionType === type.value}
-                    onChange={handleChange} 
+                    onChange={handleChange}
                   />
-                  <label htmlFor={type.value}>{type.label}</label>
+                  <label htmlFor={`question-type-${type.value}`}>
+                    {type.label}
+                  </label>
                 </div>
               ))}
             </div>
             
-            <div className="form-group">
+            <div className="question-type-description">
+              {formData.questionType === "short_answer" && (
+                <p>Short answer questions test recall of key facts and concepts.</p>
+              )}
+              {formData.questionType === "multiple_choice" && (
+                <p>Multiple choice questions provide options to choose from, testing recognition.</p>
+              )}
+              {formData.questionType === "essay" && (
+                <p>Essay style questions test deeper understanding and application of knowledge.</p>
+              )}
+              {formData.questionType === "acronym" && (
+                <p>Acronym questions help memorize lists or sequences using memorable letter patterns.</p>
+              )}
+            </div>
+            
+            <div className="color-selector-section">
               <h3>Select Card Color</h3>
               <div className="color-grid">
                 {BRIGHT_COLORS.map(color => (
@@ -542,105 +615,73 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
                   ></div>
                 ))}
               </div>
+              <div className="selected-color-preview">
+                <span>Selected Color:</span>
+                <div 
+                  className="color-preview" 
+                  style={{ 
+                    backgroundColor: formData.subjectColor,
+                    color: getContrastColor(formData.subjectColor)
+                  }}
+                >
+                  Sample Text
+                </div>
+              </div>
             </div>
           </div>
         );
         
-      case 7: // Generated Cards
+      case 7: // Preview Generated Cards
         return (
-          <div className="step-content generated-cards-step">
+          <div className="step-content">
             <h2>Generated Flashcards</h2>
             
-            {isGenerating ? (
-              <div className="loading-cards">
-                <div className="spinner"></div>
-                <p>Generating cards with AI...</p>
-                <p className="small">(This may take a few moments)</p>
-              </div>
-            ) : error ? (
+            {error && (
               <div className="error-message">
                 <p>{error}</p>
-                <button onClick={handleRegenerateCards} className="secondary-button">
-                  Try Again
-                </button>
+                <button onClick={handleRegenerateCards}>Try Again</button>
+              </div>
+            )}
+            
+            {isGenerating ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Generating your flashcards...</p>
               </div>
             ) : (
               <>
-                <div className="generated-cards-actions">
-                  <button onClick={handleAddAllCards} className="primary-button">
-                    Add All Cards to Bank
+                <div className="preview-controls">
+                  <button 
+                    onClick={handleAddAllCards} 
+                    className="primary-button"
+                    disabled={generatedCards.every(card => card.added)}
+                  >
+                    Add All to Bank
                   </button>
-                  <button onClick={handleRegenerateCards} className="secondary-button">
-                    Generate New Set
+                  <button 
+                    onClick={handleRegenerateCards} 
+                    className="secondary-button"
+                  >
+                    Generate New Cards
                   </button>
                 </div>
                 
-                <div className="generated-cards-container">
+                <div className="cards-preview">
                   {generatedCards.map(card => (
-                    <div 
-                      key={card.id} 
-                      className={`generated-card ${card.added ? 'added' : ''}`}
-                      style={{ 
-                        backgroundColor: card.cardColor,
-                        color: getContrastColor(card.cardColor)
-                      }}
-                    >
-                      <div className="card-header">
-                        <span>{card.subject} - {card.topic}</span>
-                        {!card.added && (
-                          <button 
-                            onClick={() => handleAddCard(card)} 
-                            className="add-card-btn"
-                          >
-                            Add to Bank
-                          </button>
-                        )}
-                      </div>
+                    <div key={card.id} className="preview-card-container">
+                      <Flashcard 
+                        card={card} 
+                        showButtons={false} 
+                      />
                       
-                      <div className="card-content">
-                        {formData.questionType === "acronym" ? (
-                          <>
-                            <div className="card-question">
-                              <strong>Acronym:</strong> {card.acronym}
-                            </div>
-                            <div className="card-answer">
-                              <strong>Explanation:</strong> {card.explanation}
-                            </div>
-                          </>
-                        ) : formData.questionType === "multiple_choice" ? (
-                          <>
-                            <div className="card-question">
-                              {card.question}
-                            </div>
-                            <div className="card-options">
-                              <ol type="a">
-                                {card.options.map((option, idx) => (
-                                  <li key={idx}>
-                                    {option.replace(/^[a-d]\)\s*/i, '')}
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-                            <div className="card-answer">
-                              <strong>Answer:</strong> {card.correctAnswer.replace(/^[a-d]\)\s*/i, '')}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="card-question">
-                              {card.question}
-                            </div>
-                            <div className="card-answer">
-                              <strong>Key Points:</strong>
-                              <ul>
-                                {card.keyPoints.map((point, idx) => (
-                                  <li key={idx}>{point}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      {!card.added && (
+                        <button 
+                          onClick={() => handleAddCard(card)} 
+                          className="add-card-button"
+                        >
+                          Add to Bank
+                        </button>
+                      )}
                       
                       {card.added && (
                         <div className="card-added-overlay">

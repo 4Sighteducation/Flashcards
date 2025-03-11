@@ -51,7 +51,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                     key={card.id}
                     card={card}
                     onDelete={() => onDeleteCard(card.id)}
-                    onUpdate={(updates) => onUpdateCard(card.id, updates)}
+                    onUpdateCard={(updatedCard) => onUpdateCard(updatedCard)}
                   />
                 ))}
               </div>

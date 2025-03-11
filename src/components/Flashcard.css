@@ -119,60 +119,89 @@
   top: 5px;
   right: 5px;
   z-index: 10;
+  display: flex;
+  gap: 5px;
 }
 
-.delete-btn {
-  background: rgba(255, 255, 255, 0.6);
+.delete-btn,
+.color-btn {
+  background: none;
   border: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-  line-height: 1;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(2px);
+  transition: background-color 0.2s;
 }
 
-.delete-btn:hover {
-  background-color: #ff5252;
-  color: white !important;
+.delete-btn:hover,
+.color-btn:hover {
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
-/* Delete confirmation */
 .delete-confirm {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.9);
+  gap: 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 3px 5px;
   border-radius: 4px;
-  padding: 3px;
-}
-
-.delete-confirm span {
-  font-size: 0.7rem;
-  margin-right: 5px;
+  backdrop-filter: blur(2px);
 }
 
 .confirm-btn,
 .cancel-btn {
-  font-size: 0.7rem;
-  padding: 2px 4px;
+  background: none;
   border: none;
-  border-radius: 3px;
   cursor: pointer;
-  margin-left: 3px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 12px;
 }
 
 .confirm-btn {
-  background-color: #ff5252;
+  background-color: #f44336;
   color: white;
 }
 
 .cancel-btn {
   background-color: #e0e0e0;
   color: #333;
+}
+
+.color-picker-container {
+  position: absolute;
+  top: 30px;
+  right: 5px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  z-index: 20;
+}
+
+.color-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.2);
 }
 
 /* Lists within cards */

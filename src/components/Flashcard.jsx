@@ -48,8 +48,8 @@ const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '
     // Reset font size to maximum to measure properly
     text.style.fontSize = `${maxFontSize}px`;
     
-    // Check if overflowing
-    if (text.scrollHeight > container.clientHeight) {
+    // Check if overflowing (both width and height)
+    if (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth) {
       // Binary search to find the right size
       let min = minFontSize;
       let max = maxFontSize;
@@ -58,7 +58,7 @@ const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '
         const mid = Math.floor((min + max) / 2);
         text.style.fontSize = `${mid}px`;
         
-        if (text.scrollHeight <= container.clientHeight) {
+        if (text.scrollHeight <= container.clientHeight && text.scrollWidth <= container.clientWidth) {
           min = mid + 1;
         } else {
           max = mid - 1;
@@ -67,6 +67,12 @@ const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '
       
       // Final adjustment
       text.style.fontSize = `${max}px`;
+      
+      // If still overflowing at minimum size, add ellipsis
+      if (max <= minFontSize && (text.scrollHeight > container.clientHeight || text.scrollWidth > container.clientWidth)) {
+        text.style.overflow = 'hidden';
+        text.style.textOverflow = 'ellipsis';
+      }
     }
   };
   
@@ -104,17 +110,30 @@ const MultipleChoiceOptions = ({ options }) => {
       overflow = false;
       items.forEach(item => {
         item.style.fontSize = `${fontSize}px`;
-        if (item.scrollWidth > item.clientWidth) {
+        // Check both width and height overflow
+        if (item.scrollWidth > item.clientWidth || 
+            container.scrollHeight > container.clientHeight) {
           overflow = true;
         }
       });
       
-      if (overflow && fontSize > 8) {
+      if (overflow && fontSize > 6) {
         fontSize -= 1;
       } else {
         break;
       }
-    } while (fontSize > 8);
+    } while (fontSize > 6);
+    
+    // Final check for container overflow
+    if (container.scrollHeight > container.clientHeight && fontSize > 6) {
+      // Further reduce font size if the entire list is too tall
+      do {
+        fontSize -= 1;
+        items.forEach(item => {
+          item.style.fontSize = `${fontSize}px`;
+        });
+      } while (container.scrollHeight > container.clientHeight && fontSize > 6);
+    }
   };
   
   return (
@@ -130,9 +149,10 @@ const MultipleChoiceOptions = ({ options }) => {
   );
 };
 
-const Flashcard = ({ card, onDelete, onFlip, showButtons = true }) => {
+const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const cardRef = useRef(null);
   
   // Apply card styles based on card data
@@ -148,7 +168,7 @@ const Flashcard = ({ card, onDelete, onFlip, showButtons = true }) => {
   // Handle card flipping
   const handleFlip = (e) => {
     // Don't flip if clicking on buttons
-    if (e.target.closest('.card-controls')) return;
+    if (e.target.closest('.card-controls') || e.target.closest('.color-picker-container')) return;
     
     setIsFlipped(!isFlipped);
     if (onFlip) onFlip(card, !isFlipped);
@@ -172,6 +192,31 @@ const Flashcard = ({ card, onDelete, onFlip, showButtons = true }) => {
     if (onDelete) onDelete(card.id);
   };
   
+  // Toggle color picker
+  const toggleColorPicker = (e) => {
+    e.stopPropagation();
+    setShowColorPicker(!showColorPicker);
+  };
+  
+  // Handle color change
+  const handleColorChange = (color) => {
+    if (onUpdateCard) {
+      onUpdateCard({
+        ...card,
+        cardColor: color,
+        baseColor: color
+      });
+    }
+    setShowColorPicker(false);
+  };
+  
+  // Bright colors for the color picker
+  const colorOptions = [
+    "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
+    "#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
+    "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000"
+  ];
+  
   // Determine if this is a multiple choice card
   const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options);
   
@@ -191,13 +236,37 @@ const Flashcard = ({ card, onDelete, onFlip, showButtons = true }) => {
               <button onClick={cancelDelete} className="cancel-btn">No</button>
             </div>
           ) : (
-            <button 
-              className="delete-btn" 
-              onClick={handleDeleteClick}
-              style={{ color: textColor }}
-            >
-              ✕
-            </button>
+            <>
+              <button 
+                className="delete-btn" 
+                onClick={handleDeleteClick}
+                style={{ color: textColor }}
+              >
+                ✕
+              </button>
+              <button 
+                className="color-btn" 
+                onClick={toggleColorPicker}
+                style={{ color: textColor }}
+              >
+                🎨
+              </button>
+            </>
+          )}
+          
+          {showColorPicker && (
+            <div className="color-picker-container" onClick={(e) => e.stopPropagation()}>
+              <div className="color-options">
+                {colorOptions.map((color) => (
+                  <div 
+                    key={color}
+                    className="color-option"
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleColorChange(color)}
+                  />
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
