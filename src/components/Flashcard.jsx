@@ -149,7 +149,7 @@ const MultipleChoiceOptions = ({ options }) => {
   );
 };
 
-const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true }) => {
+const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {} }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -160,7 +160,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
   const cardStyle = {
     backgroundColor: card.cardColor || '#3cb44b',
     borderColor: card.boxNum === 5 ? 'gold' : 'transparent', // Gold border for mastered cards
-    boxShadow: card.boxNum === 5 ? '0 0 10px rgba(255, 215, 0, 0.5)' : undefined
+    boxShadow: card.boxNum === 5 ? '0 0 10px rgba(255, 215, 0, 0.5)' : undefined,
+    ...style // Apply any additional styles passed in
   };
   
   // Get contrast color for text based on background
@@ -239,11 +240,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
     <>
       <div 
         ref={cardRef}
-        className={`flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''}`}
+        className={`flashcard ${isFlipped ? 'flipped' : ''} ${card.boxNum === 5 ? 'mastered' : ''} ${preview ? 'preview-card' : ''}`}
         onClick={handleFlip}
         style={cardStyle}
       >
-        {showButtons && (
+        {showButtons && !preview && (
           <div className="card-controls">
             {confirmDelete ? (
               <div className="delete-confirm">
@@ -288,7 +289,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
         
         <div className="flashcard-inner">
           <div className="flashcard-front" style={{ color: textColor }}>
-            {hasAdditionalInfo && (
+            {hasAdditionalInfo && !preview && (
               <button 
                 className="info-btn" 
                 onClick={toggleInfoModal}
