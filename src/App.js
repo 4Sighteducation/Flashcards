@@ -23,6 +23,39 @@ const BOX_DESCRIPTIONS = {
   5: "Cards here remain indefinitely unless answered incorrectly, which returns them to Box 1."
 };
 
+// Utility function to safely parse JSON
+const safeParseJSON = (jsonString) => {
+  try {
+    // Check if the string is already an object
+    if (typeof jsonString === 'object') return jsonString;
+    
+    // Regular parse attempt
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
+    
+    // Attempt to fix common JSON syntax errors
+    try {
+      // Replace any invalid characters that might be causing issues
+      const cleanedJson = jsonString
+        .replace(/\t/g, ' ')           // Replace tabs with spaces
+        .replace(/\n/g, ' ')           // Replace newlines with spaces
+        .replace(/\r/g, ' ')           // Replace carriage returns with spaces
+        .replace(/\\"/g, '"')          // Fix escaped quotes
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // Ensure property names are quoted
+        .replace(/,\s*}/g, '}')        // Remove trailing commas in objects
+        .replace(/,\s*\]/g, ']');      // Remove trailing commas in arrays
+      
+      return JSON.parse(cleanedJson);
+    } catch (secondError) {
+      console.error("Failed to recover corrupted JSON:", secondError);
+      
+      // Last resort: fall back to empty data structure
+      return {};
+    }
+  }
+};
+
 function App() {
   // Authentication and user state
   const [auth, setAuth] = useState(null);
@@ -268,21 +301,21 @@ function App() {
       const savedUserTopics = localStorage.getItem('userTopics');
       
       if (savedCards) {
-        const parsedCards = JSON.parse(savedCards);
+        const parsedCards = safeParseJSON(savedCards);
         setAllCards(parsedCards);
         updateSpacedRepetitionData(parsedCards);
       }
       
       if (savedColorMapping) {
-        setSubjectColorMapping(JSON.parse(savedColorMapping));
+        setSubjectColorMapping(safeParseJSON(savedColorMapping));
       }
       
       if (savedSpacedRepetition) {
-        setSpacedRepetitionData(JSON.parse(savedSpacedRepetition));
+        setSpacedRepetitionData(safeParseJSON(savedSpacedRepetition));
       }
       
       if (savedUserTopics) {
-        setUserTopics(JSON.parse(savedUserTopics));
+        setUserTopics(safeParseJSON(savedUserTopics));
       }
       
       console.log("Loaded data from localStorage");
@@ -692,41 +725,49 @@ function App() {
 
             // If user data was included, process it
             if (event.data.data?.userData) {
-              const userData = event.data.data.userData;
+              try {
+                // Use our safe parsing function to handle potential corrupted JSON
+                const userData = safeParseJSON(event.data.data.userData);
 
-              // Store the recordId if available
-              if (userData.recordId) {
-                setRecordId(userData.recordId);
-                console.log("Stored recordId:", userData.recordId);
-              }
+                // Store the recordId if available
+                if (userData.recordId) {
+                  setRecordId(userData.recordId);
+                  console.log("Stored recordId:", userData.recordId);
+                }
 
-              // Process cards
-              if (userData.cards && Array.isArray(userData.cards)) {
-                setAllCards(userData.cards);
-                updateSpacedRepetitionData(userData.cards);
-              }
+                // Process cards
+                if (userData.cards && Array.isArray(userData.cards)) {
+                  setAllCards(userData.cards);
+                  updateSpacedRepetitionData(userData.cards);
+                }
 
-              // Process color mapping
-              if (userData.colorMapping) {
-                setSubjectColorMapping(userData.colorMapping);
-              }
+                // Process color mapping
+                if (userData.colorMapping) {
+                  setSubjectColorMapping(userData.colorMapping);
+                }
 
-              // Process spaced repetition data if separate
-              if (userData.spacedRepetition) {
-                setSpacedRepetitionData(userData.spacedRepetition);
-              }
-              
-              // Process user topics if available
-              if (userData.userTopics) {
-                setUserTopics(userData.userTopics);
+                // Process spaced repetition data if separate
+                if (userData.spacedRepetition) {
+                  setSpacedRepetitionData(userData.spacedRepetition);
+                }
+                
+                // Process user topics if available
+                if (userData.userTopics) {
+                  setUserTopics(userData.userTopics);
+                }
+              } catch (error) {
+                console.error("Error processing user data:", error);
+                showStatus("Error loading your data. Loading from local storage instead.");
+                loadFromLocalStorage();
               }
             } else {
-              // If no user data was provided, load from localStorage as fallback
+              // If no user data, load from localStorage
+              console.log("No user data received, falling back to localStorage");
               loadFromLocalStorage();
             }
-
+            
             setLoading(false);
-
+            
             // Confirm receipt of auth info
             if (window.parent !== window) {
               window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
@@ -734,57 +775,65 @@ function App() {
             break;
 
           case "SAVE_RESULT":
+            console.log("Save result received:", event.data.success);
             setIsSaving(false);
-            showStatus(
-              event.data.success ? "Saved successfully!" : "Error saving data"
-            );
+            if (event.data.success) {
+              showStatus("Saved successfully!");
+            } else {
+              showStatus("Error saving data. Changes saved locally.");
+            }
             break;
-
+            
           case "LOAD_SAVED_DATA":
             console.log("Received updated data from Knack", event.data.data);
 
             if (event.data.data) {
-              // Process cards
-              if (
-                event.data.data.cards &&
-                Array.isArray(event.data.data.cards)
-              ) {
-                setAllCards(event.data.data.cards);
-                updateSpacedRepetitionData(event.data.data.cards);
-              }
+              try {
+                // Process cards
+                if (event.data.data.cards && Array.isArray(event.data.data.cards)) {
+                  setAllCards(event.data.data.cards);
+                  updateSpacedRepetitionData(event.data.data.cards);
+                }
 
-              // Process color mapping
-              if (event.data.data.colorMapping) {
-                setSubjectColorMapping(event.data.data.colorMapping);
-              }
+                // Process color mapping
+                if (event.data.data.colorMapping) {
+                  setSubjectColorMapping(safeParseJSON(event.data.data.colorMapping));
+                }
 
-              // Process spaced repetition data if separate
-              if (event.data.data.spacedRepetition) {
-                setSpacedRepetitionData(event.data.data.spacedRepetition);
-              }
-              
-              // Process user topics if available
-              if (event.data.data.userTopics) {
-                setUserTopics(event.data.data.userTopics);
+                // Process spaced repetition data if separate
+                if (event.data.data.spacedRepetition) {
+                  setSpacedRepetitionData(safeParseJSON(event.data.data.spacedRepetition));
+                }
+                
+                // Process user topics if available
+                if (event.data.data.userTopics) {
+                  setUserTopics(safeParseJSON(event.data.data.userTopics));
+                }
+                
+                showStatus("Updated with latest data from server");
+              } catch (error) {
+                console.error("Error processing updated data:", error);
+                showStatus("Error loading updated data");
               }
             }
-
-            showStatus("Updated with latest data from server");
             break;
+
+          default:
+            console.log("Unknown message type:", event.data.type);
         }
       }
     };
 
-    // Set up message listener for communication with the parent window
+    // Set up listener for messages from parent window
     window.addEventListener("message", handleMessage);
 
-    // Signal to parent that we're ready for auth info
+    // Try to send a ready message to parent
     if (window.parent !== window) {
-      console.log("App loaded - sending ready message to parent");
       window.parent.postMessage({ type: "APP_READY" }, "*");
+      console.log("Sent ready message to parent");
     } else {
-      // For standalone testing without Knack
-      console.log("App running in standalone mode - using local storage");
+      // In standalone mode, load from localStorage
+      console.log("Running in standalone mode");
       setAuth({
         id: "test-user",
         email: "test@example.com",
@@ -794,11 +843,10 @@ function App() {
       setLoading(false);
     }
 
-    // Cleanup
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage]);
+  }, [showStatus, updateSpacedRepetitionData, loadFromLocalStorage]);
 
   // Function to extract user-specific topics for a subject
   const getUserTopicsForSubject = useCallback(

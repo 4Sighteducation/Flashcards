@@ -150,7 +150,7 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
           
           return (
             <li key={index}>
-              {displayOption.replace(/^([a-d]\)\s*)/i, '$1 ')}
+              {displayOption}
             </li>
           );
         })}
