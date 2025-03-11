@@ -298,6 +298,9 @@ function App() {
               if (userData.spacedRepetition) {
                 setSpacedRepetitionData(userData.spacedRepetition);
               }
+            } else {
+              // If no user data was provided, load from localStorage as fallback
+              loadFromLocalStorage();
             }
 
             setLoading(false);
@@ -354,11 +357,13 @@ function App() {
       window.parent.postMessage({ type: "APP_READY" }, "*");
     } else {
       // For standalone testing without Knack
+      console.log("App running in standalone mode - using local storage");
       setAuth({
         id: "test-user",
         email: "test@example.com",
         name: "Test User",
       });
+      loadFromLocalStorage();
       setLoading(false);
     }
 
@@ -366,7 +371,7 @@ function App() {
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [updateSpacedRepetitionData, showStatus]);
+  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage]);
 
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {
