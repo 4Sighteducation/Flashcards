@@ -256,7 +256,6 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
                 <button 
                   className="delete-btn" 
                   onClick={handleDeleteClick}
-                  style={{ color: "red", position: "absolute", bottom: "10px", right: "10px" }}
                 >
                   ✕
                 </button>
