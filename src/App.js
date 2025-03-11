@@ -15,6 +15,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Initializing...");
   const [error, setError] = useState(null);
+  const [recordId, setRecordId] = useState(null);
 
   // App view state
   const [view, setView] = useState("cardBank"); // cardBank, createCard, spacedRepetition
@@ -130,6 +131,7 @@ function App() {
           {
             type: "SAVE_DATA",
             data: {
+              recordId: recordId,
               cards: allCards,
               colorMapping: subjectColorMapping,
               spacedRepetition: spacedRepetitionData,
@@ -154,7 +156,7 @@ function App() {
       setIsSaving(false);
       showStatus("Error saving data");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage, recordId]);
 
   // Cards and data operations - these depend on the above functions
   // Load data from localStorage fallback
@@ -294,21 +296,39 @@ function App() {
 
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {
+    // Get the array of card IDs for the current box
+    let cardIds = [];
     switch (currentBox) {
       case 1:
-        return spacedRepetitionData.box1;
+        cardIds = spacedRepetitionData.box1 || [];
+        break;
       case 2:
-        return spacedRepetitionData.box2;
+        cardIds = spacedRepetitionData.box2 || [];
+        break;
       case 3:
-        return spacedRepetitionData.box3;
+        cardIds = spacedRepetitionData.box3 || [];
+        break;
       case 4:
-        return spacedRepetitionData.box4;
+        cardIds = spacedRepetitionData.box4 || [];
+        break;
       case 5:
-        return spacedRepetitionData.box5;
+        cardIds = spacedRepetitionData.box5 || [];
+        break;
       default:
-        return [];
+        cardIds = [];
     }
-  }, [currentBox, spacedRepetitionData]);
+    
+    console.log(`Getting cards for box ${currentBox}: IDs`, cardIds);
+    
+    // Map the IDs to the actual card objects
+    const cardsForBox = cardIds.map(cardId => 
+      allCards.find(card => card.id === cardId)
+    ).filter(card => card !== undefined);
+    
+    console.log(`Found ${cardsForBox.length} valid cards for box ${currentBox}`, cardsForBox);
+    
+    return cardsForBox;
+  }, [currentBox, spacedRepetitionData, allCards]);
 
   // Extract unique subjects from all cards
   const getSubjects = useCallback(() => {
@@ -405,6 +425,12 @@ function App() {
             // If user data was included, process it
             if (event.data.data?.userData) {
               const userData = event.data.data.userData;
+
+              // Store the recordId if available
+              if (userData.recordId) {
+                setRecordId(userData.recordId);
+                console.log("Stored recordId:", userData.recordId);
+              }
 
               // Process cards
               if (userData.cards && Array.isArray(userData.cards)) {
