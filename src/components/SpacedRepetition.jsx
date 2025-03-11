@@ -486,11 +486,19 @@ const SpacedRepetition = ({
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
-                    style={{ position: 'absolute', top: '10px', left: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                    style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
                   >
                     ℹ️
                   </button>
                 )}
+                
+                {/* Next review date display */}
+                {currentCards[currentIndex].nextReviewDate && (
+                  <div className="review-date-indicator">
+                    Next review: {new Date(currentCards[currentIndex].nextReviewDate).toLocaleDateString()}
+                  </div>
+                )}
+                
                 <div
                   className="card-content"
                   dangerouslySetInnerHTML={{

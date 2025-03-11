@@ -377,21 +377,24 @@ function App() {
           case 1: // Review next day
             nextDate.setDate(today.getDate() + 1);
             break;
-          case 2: // Every 2 days
+          case 2: // Every other day
             nextDate.setDate(today.getDate() + 2);
             break;
-          case 3: // Every 3 days
+          case 3: // Every 3rd day
             nextDate.setDate(today.getDate() + 3);
             break;
-          case 4: // Every 7 days
+          case 4: // Every week (7 days)
             nextDate.setDate(today.getDate() + 7);
             break;
-          case 5: // Retired, but check after 21 days
-            nextDate.setDate(today.getDate() + 21);
+          case 5: // Every 4 weeks (28 days)
+            nextDate.setDate(today.getDate() + 28);
             break;
           default:
             nextDate.setDate(today.getDate() + 1);
         }
+        
+        // Set the time to midnight for consistent day-based comparisons
+        nextDate.setHours(0, 0, 0, 0);
         
         return nextDate.toISOString();
       };
@@ -406,13 +409,25 @@ function App() {
         // Remove the card from its current box (if it exists)
         for (let i = 1; i <= 5; i++) {
           newData[`box${i}`] = newData[`box${i}`].filter(
-            (item) => String(item) !== stringCardId
+            (item) => {
+              if (typeof item === 'object' && item !== null) {
+                return item.cardId !== stringCardId;
+              }
+              return String(item) !== stringCardId;
+            }
           );
         }
 
-        // Add the card to the new box - store as string ID only
+        // Add the card to the new box with next review date
         const targetBox = `box${box}`;
-        newData[targetBox].push(stringCardId);
+        const nextReviewDate = calculateNextReviewDate(box);
+        
+        // Store both the card ID and review date information
+        newData[targetBox].push({
+          cardId: stringCardId,
+          lastReviewed: new Date().toISOString(),
+          nextReviewDate: nextReviewDate
+        });
 
         // Update the Knack notification fields on the next save
         setKnackFieldsNeedUpdate(true);
@@ -439,6 +454,7 @@ function App() {
       
       // Check if there are cards ready for review in each box
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to midnight for consistent day comparison
       
       // Prepare box status data
       const boxStatus = {
@@ -454,13 +470,21 @@ function App() {
         const boxKey = `box${i}`;
         const fieldKey = `field_299${i}`;
         
-        // With string IDs, we can't check review dates, so we'll consider boxes with cards as ready
-        boxStatus[fieldKey] = spacedRepetitionData[boxKey].length > 0;
+        // Box is ready if any card's next review date is today or earlier
+        boxStatus[fieldKey] = spacedRepetitionData[boxKey]?.some(item => {
+          // For string IDs (old format), assume they're ready
+          if (typeof item === 'string') return true;
+          
+          // For object format with nextReviewDate
+          if (item && item.nextReviewDate) {
+            const nextReviewDate = new Date(item.nextReviewDate);
+            return nextReviewDate <= today;
+          }
+          
+          return false;
+        }) || false;
         
-        // Special case for Box 5 - we'll just set it if there are cards in box 5
-        if (i === 5) {
-          boxStatus.field_2995 = spacedRepetitionData.box5.length > 0;
-        }
+        console.log(`Box ${i} notification status:`, boxStatus[fieldKey]);
       }
       
       // Update Knack object with box status
@@ -497,7 +521,7 @@ function App() {
 
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {
-    // Get the array of card IDs for the current box
+    // Get the array of card items for the current box
     const boxKey = `box${currentBox}`;
     const boxItems = spacedRepetitionData[boxKey] || [];
     console.log(`Getting cards for box ${currentBox}:`, boxKey, boxItems);
@@ -511,14 +535,35 @@ function App() {
     // Log all card information to help debug
     console.log("All available cards:", allCards.length, allCards.map(c => c.id).slice(0, 10));
     
+    // Current date for review date comparisons
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight for consistent day comparison
+    
     // Map the IDs to the actual card objects
     const cardsForBox = [];
     
-    // Process each item in the box (which should be string IDs based on your JSON example)
+    // Process each item in the box
     for (const boxItem of boxItems) {
-      // Get the ID (handle both string and object formats for backward compatibility)
-      const cardId = typeof boxItem === 'string' ? boxItem : 
-                    (boxItem && boxItem.cardId ? boxItem.cardId : null);
+      // Get the ID and review date info
+      let cardId, nextReviewDate, isReviewable = true;
+      
+      if (typeof boxItem === 'string') {
+        // If it's just a string ID without review date, assume it's reviewable
+        cardId = boxItem;
+        nextReviewDate = null;
+      } else if (boxItem && typeof boxItem === 'object') {
+        // If it has review date info
+        cardId = boxItem.cardId;
+        
+        if (boxItem.nextReviewDate) {
+          nextReviewDate = new Date(boxItem.nextReviewDate);
+          // Card is reviewable if the next review date is today or earlier
+          isReviewable = nextReviewDate <= today;
+        }
+      } else {
+        console.warn("Invalid box item, skipping", boxItem);
+        continue;
+      }
       
       if (!cardId) {
         console.warn("Empty card ID found in box, skipping");
@@ -529,12 +574,25 @@ function App() {
       const matchingCard = allCards.find(card => {
         // Try multiple matching approaches
         return card.id === cardId || 
-              String(card.id).trim() === String(cardId).trim();
+               String(card.id).trim() === String(cardId).trim();
       });
       
       if (matchingCard) {
-        console.log(`Found card for ID ${cardId}:`, matchingCard.subject, matchingCard.topic);
-        cardsForBox.push(matchingCard);
+        // Add reviewability and next review date info to the card
+        const cardWithReviewInfo = {
+          ...matchingCard,
+          isReviewable,
+          nextReviewDate: nextReviewDate ? nextReviewDate.toISOString() : null
+        };
+        
+        console.log(`Found card for ID ${cardId}:`, 
+          matchingCard.subject, 
+          matchingCard.topic,
+          `reviewable: ${isReviewable}`,
+          `next review: ${nextReviewDate ? nextReviewDate.toLocaleDateString() : 'anytime'}`
+        );
+        
+        cardsForBox.push(cardWithReviewInfo);
       } else {
         console.warn(`Card with ID ${cardId} not found in allCards (total: ${allCards.length})`);
       }

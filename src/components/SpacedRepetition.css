@@ -688,3 +688,16 @@
   color: #333;
   font-size: 1rem;
 }
+
+/* Review date indicator */
+.review-date-indicator {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+}
