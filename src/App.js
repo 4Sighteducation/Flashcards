@@ -116,27 +116,6 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData]);
 
-  // Load data from Knack
-  const loadData = useCallback(async () => {
-    if (!auth) return;
-
-    setLoadingMessage("Loading your flashcards...");
-    setLoading(true);
-
-    try {
-      // Data will be loaded through the Knack integration script
-      // We just wait for messages from the parent window
-      
-      // Load from localStorage as fallback
-      loadFromLocalStorage();
-    } catch (error) {
-      console.error("Error loading data:", error);
-      setError("Failed to load your flashcards. Please refresh and try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [auth, loadFromLocalStorage]);
-
   // Save data to Knack
   const saveData = useCallback(() => {
     if (!auth) return;
@@ -176,6 +155,27 @@ function App() {
     }
   }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage]);
 
+  // Load data from Knack
+  const loadData = useCallback(async () => {
+    if (!auth) return;
+
+    setLoadingMessage("Loading your flashcards...");
+    setLoading(true);
+
+    try {
+      // Data will be loaded through the Knack integration script
+      // We just wait for messages from the parent window
+      
+      // Load from localStorage as fallback
+      loadFromLocalStorage();
+    } catch (error) {
+      console.error("Error loading data:", error);
+      setError("Failed to load your flashcards. Please refresh and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [auth, loadFromLocalStorage]);
+
   // Add a new card
   const addCard = useCallback(
     (card) => {
@@ -187,7 +187,9 @@ function App() {
         updateSpacedRepetitionData(newCards);
         
         // Save immediately when adding a card
-        setTimeout(() => saveData(), 100);
+        // Use a reference capture for saveData to avoid circular dependency
+        const saveDataRef = saveData;
+        setTimeout(() => saveDataRef(), 100);
         
         return newCards;
       });
@@ -210,7 +212,9 @@ function App() {
         updateSpacedRepetitionData(newCards);
         
         // Save immediately when deleting a card
-        setTimeout(() => saveData(), 100);
+        // Use a reference capture for saveData to avoid circular dependency
+        const saveDataRef = saveData;
+        setTimeout(() => saveDataRef(), 100);
         
         return newCards;
       });
@@ -232,7 +236,9 @@ function App() {
         updateSpacedRepetitionData(updatedCards);
         
         // Save immediately when updating a card
-        setTimeout(() => saveData(), 100);
+        // Use a reference capture for saveData to avoid circular dependency
+        const saveDataRef = saveData;
+        setTimeout(() => saveDataRef(), 100);
 
         return updatedCards;
       });
@@ -267,7 +273,9 @@ function App() {
         updateSpacedRepetitionData(updatedCards);
 
         // Schedule a save
-        setTimeout(() => saveData(), 500);
+        // Use a reference capture for saveData to avoid circular dependency
+        const saveDataRef = saveData;
+        setTimeout(() => saveDataRef(), 500);
 
         return updatedCards;
       });
@@ -385,7 +393,9 @@ function App() {
         }
 
         // Schedule a save
-        setTimeout(() => saveData(), 500);
+        // Use a reference capture for saveData to avoid circular dependency
+        const saveDataRef = saveData;
+        setTimeout(() => saveDataRef(), 500);
 
         return newMapping;
       });
