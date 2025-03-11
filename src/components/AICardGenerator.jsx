@@ -1324,19 +1324,17 @@ Use this format for different question types:
                     </button>
                   </div>
                   
-                  <h3>{card.front}</h3>
-                  
-                  <div className="card-preview">
-                    {card.questionType === "multiple_choice" && card.options && (
-                      <div className="card-options">
-                        {card.options.map((option, idx) => (
-                          <div key={idx} className="card-option">
-                            {option}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <Flashcard 
+                    card={card}
+                    preview={true}
+                    style={{
+                      height: '200px',
+                      width: '100%',
+                      margin: '0',
+                      boxShadow: 'none'
+                    }}
+                    showButtons={false}
+                  />
                 </div>
               ))}
             </div>

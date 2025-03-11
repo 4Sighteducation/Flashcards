@@ -86,7 +86,7 @@ const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '
 };
 
 // Component for multiple choice options with scaling
-const MultipleChoiceOptions = ({ options }) => {
+const MultipleChoiceOptions = ({ options, preview = false }) => {
   const containerRef = useRef(null);
   
   useEffect(() => {
@@ -136,14 +136,24 @@ const MultipleChoiceOptions = ({ options }) => {
     }
   };
   
+  // Preserve the letters for the options
   return (
     <div className="options-container" ref={containerRef}>
       <ol type="a">
-        {options.map((option, index) => (
-          <li key={index}>
-            {option.replace(/^[a-d]\)\s*/i, '')}
-          </li>
-        ))}
+        {options.map((option, index) => {
+          // Keep the letter prefix if it exists, or add it if it doesn't
+          let displayOption = option;
+          if (!option.match(/^[a-d]\)\s*/i)) {
+            const letters = ['a', 'b', 'c', 'd'];
+            displayOption = `${letters[index % 4]}) ${option}`;
+          }
+          
+          return (
+            <li key={index}>
+              {displayOption.replace(/^([a-d]\)\s*)/i, '$1 ')}
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
@@ -304,7 +314,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <ScaledText className="question-title" maxFontSize={16}>
                   {card.front || card.question}
                 </ScaledText>
-                <MultipleChoiceOptions options={card.options} />
+                <MultipleChoiceOptions options={card.options} preview={preview} />
               </>
             ) : (
               <ScaledText maxFontSize={16}>
@@ -313,7 +323,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
           </div>
           
-          <div className="flashcard-back">
+          <div className="flashcard-back" style={{ color: textColor }}>
             <ScaledText maxFontSize={14}>
               <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
             </ScaledText>
