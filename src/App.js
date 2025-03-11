@@ -51,7 +51,7 @@ function App() {
     };
   }, [auth]);
 
-  // Show temporary status message
+  // Define helper functions first, without dependencies on other functions
   const showStatus = useCallback((message, duration = 3000) => {
     setStatusMessage(message);
     setTimeout(() => setStatusMessage(""), duration);
@@ -77,34 +77,35 @@ function App() {
     setSpacedRepetitionData(newSpacedRepetitionData);
   }, []);
 
-  // Load data from localStorage fallback
-  const loadFromLocalStorage = useCallback(() => {
-    try {
-      const savedCards = localStorage.getItem('flashcards');
-      const savedColorMapping = localStorage.getItem('colorMapping');
-      const savedSpacedRepetition = localStorage.getItem('spacedRepetition');
-      
-      if (savedCards) {
-        const parsedCards = JSON.parse(savedCards);
-        setAllCards(parsedCards);
-        updateSpacedRepetitionData(parsedCards);
-      }
-      
-      if (savedColorMapping) {
-        setSubjectColorMapping(JSON.parse(savedColorMapping));
-      }
-      
-      if (savedSpacedRepetition) {
-        setSpacedRepetitionData(JSON.parse(savedSpacedRepetition));
-      }
-      
-      console.log("Loaded data from localStorage");
-    } catch (error) {
-      console.error("Error loading from localStorage:", error);
-    }
-  }, [updateSpacedRepetitionData, setAllCards, setSubjectColorMapping, setSpacedRepetitionData]);
+  // Update color mappings - independent of other functions
+  const updateColorMapping = useCallback(
+    (subject, topic, color) => {
+      setSubjectColorMapping((prevMapping) => {
+        const newMapping = { ...prevMapping };
 
-  // Save data to localStorage fallback
+        // Create subject entry if it doesn't exist
+        if (!newMapping[subject]) {
+          newMapping[subject] = { base: color, topics: {} };
+        }
+
+        // If a topic is provided, update the topic color
+        if (topic) {
+          if (!newMapping[subject].topics) {
+            newMapping[subject].topics = {};
+          }
+          newMapping[subject].topics[topic] = color;
+        } else {
+          // Otherwise just update the base subject color
+          newMapping[subject].base = color;
+        }
+        
+        return newMapping;
+      });
+    },
+    []
+  );
+
+  // Save data to localStorage fallback - dependent on state only
   const saveToLocalStorage = useCallback(() => {
     try {
       localStorage.setItem('flashcards', JSON.stringify(allCards));
@@ -116,7 +117,7 @@ function App() {
     }
   }, [allCards, subjectColorMapping, spacedRepetitionData]);
 
-  // Save data to Knack
+  // Save data to Knack - depends on saveToLocalStorage and showStatus
   const saveData = useCallback(() => {
     if (!auth) return;
 
@@ -155,6 +156,34 @@ function App() {
     }
   }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage]);
 
+  // Cards and data operations - these depend on the above functions
+  // Load data from localStorage fallback
+  const loadFromLocalStorage = useCallback(() => {
+    try {
+      const savedCards = localStorage.getItem('flashcards');
+      const savedColorMapping = localStorage.getItem('colorMapping');
+      const savedSpacedRepetition = localStorage.getItem('spacedRepetition');
+      
+      if (savedCards) {
+        const parsedCards = JSON.parse(savedCards);
+        setAllCards(parsedCards);
+        updateSpacedRepetitionData(parsedCards);
+      }
+      
+      if (savedColorMapping) {
+        setSubjectColorMapping(JSON.parse(savedColorMapping));
+      }
+      
+      if (savedSpacedRepetition) {
+        setSpacedRepetitionData(JSON.parse(savedSpacedRepetition));
+      }
+      
+      console.log("Loaded data from localStorage");
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+    }
+  }, [updateSpacedRepetitionData]);
+
   // Load data from Knack
   const loadData = useCallback(async () => {
     if (!auth) return;
@@ -176,21 +205,13 @@ function App() {
     }
   }, [auth, loadFromLocalStorage]);
 
+  // Functions for card operations - defined after their dependencies
   // Add a new card
   const addCard = useCallback(
     (card) => {
       setAllCards((prevCards) => {
         const newCards = [...prevCards, card];
-        
-        // Update the card in the appropriate box for spaced repetition
-        const boxNum = card.boxNum || 1;
         updateSpacedRepetitionData(newCards);
-        
-        // Save immediately when adding a card
-        // Use a reference capture for saveData to avoid circular dependency
-        const saveDataRef = saveData;
-        setTimeout(() => saveDataRef(), 100);
-        
         return newCards;
       });
       
@@ -199,9 +220,11 @@ function App() {
         updateColorMapping(card.subject, card.topic, card.cardColor);
       }
       
+      // Save the changes after state updates have completed
+      setTimeout(() => saveData(), 100);
       showStatus("Card added successfully!");
     },
-    [updateSpacedRepetitionData, saveData, updateColorMapping, showStatus]
+    [updateSpacedRepetitionData, updateColorMapping, saveData, showStatus]
   );
 
   // Delete a card
@@ -210,15 +233,11 @@ function App() {
       setAllCards((prevCards) => {
         const newCards = prevCards.filter((card) => card.id !== cardId);
         updateSpacedRepetitionData(newCards);
-        
-        // Save immediately when deleting a card
-        // Use a reference capture for saveData to avoid circular dependency
-        const saveDataRef = saveData;
-        setTimeout(() => saveDataRef(), 100);
-        
         return newCards;
       });
       
+      // Save the changes after state updates have completed
+      setTimeout(() => saveData(), 100);
       showStatus("Card deleted");
     },
     [updateSpacedRepetitionData, saveData, showStatus]
@@ -231,15 +250,7 @@ function App() {
         const updatedCards = prevCards.map((card) =>
           card.id === updatedCard.id ? { ...card, ...updatedCard } : card
         );
-
-        // Update spaced repetition data
         updateSpacedRepetitionData(updatedCards);
-        
-        // Save immediately when updating a card
-        // Use a reference capture for saveData to avoid circular dependency
-        const saveDataRef = saveData;
-        setTimeout(() => saveDataRef(), 100);
-
         return updatedCards;
       });
       
@@ -248,9 +259,11 @@ function App() {
         updateColorMapping(updatedCard.subject, updatedCard.topic, updatedCard.cardColor);
       }
       
+      // Save the changes after state updates have completed
+      setTimeout(() => saveData(), 100);
       showStatus("Card updated");
     },
-    [saveData, updateSpacedRepetitionData, updateColorMapping, showStatus]
+    [updateSpacedRepetitionData, updateColorMapping, saveData, showStatus]
   );
 
   // Move card between spaced repetition boxes
@@ -269,18 +282,14 @@ function App() {
           return card;
         });
 
-        // Update spaced repetition data accordingly
         updateSpacedRepetitionData(updatedCards);
-
-        // Schedule a save
-        // Use a reference capture for saveData to avoid circular dependency
-        const saveDataRef = saveData;
-        setTimeout(() => saveDataRef(), 500);
-
         return updatedCards;
       });
+      
+      // Save the changes after state updates have completed
+      setTimeout(() => saveData(), 500);
     },
-    [saveData]
+    [updateSpacedRepetitionData, saveData]
   );
 
   // Get cards for the current box in spaced repetition mode
@@ -368,39 +377,6 @@ function App() {
       return defaultColor;
     },
     [subjectColorMapping, currentSubjectColor]
-  );
-
-  // Update color mappings
-  const updateColorMapping = useCallback(
-    (subject, topic, color) => {
-      setSubjectColorMapping((prevMapping) => {
-        const newMapping = { ...prevMapping };
-
-        // Create subject entry if it doesn't exist
-        if (!newMapping[subject]) {
-          newMapping[subject] = { base: color, topics: {} };
-        }
-
-        // If a topic is provided, update the topic color
-        if (topic) {
-          if (!newMapping[subject].topics) {
-            newMapping[subject].topics = {};
-          }
-          newMapping[subject].topics[topic] = color;
-        } else {
-          // Otherwise update the base subject color
-          newMapping[subject].base = color;
-        }
-
-        // Schedule a save
-        // Use a reference capture for saveData to avoid circular dependency
-        const saveDataRef = saveData;
-        setTimeout(() => saveDataRef(), 500);
-
-        return newMapping;
-      });
-    },
-    [saveData]
   );
 
   // Auto-save periodically
