@@ -119,11 +119,55 @@ const SpacedRepetition = ({
   useEffect(() => {
     // Reset index when cards change
     setCurrentIndex(0);
+    setShowFlipResponse(false);
+    setIsFlipped(false);
     setStudyCompleted(false);
-    
-    // Set the current cards
-    setCurrentCards(filteredCards);
+    setCurrentCards(filteredCards.filter(card => card.isReviewable));
+    console.log("SpacedRepetition - Updated current cards:", filteredCards);
   }, [filteredCards]);
+
+  // When going to a new card, reset the flip state
+  useEffect(() => {
+    if (currentCards.length === 0) {
+      console.log("SpacedRepetition - No cards to study");
+      return;
+    }
+    setIsFlipped(false);
+    setShowFlipResponse(false);
+    setSelectedOption(null);
+    setShowAnswerFeedback(false);
+  }, [currentIndex, currentCards]);
+
+  // Check if there are any reviewable cards for the current box
+  const hasReviewableCards = filteredCards.some(card => card.isReviewable);
+
+  console.log("SpacedRepetition - Current state:", {
+    cards: cards.length,
+    filteredCards: filteredCards.length,
+    currentCards: currentCards.length,
+    currentBox,
+    hasReviewableCards,
+    isFlipped,
+    studyCompleted
+  });
+
+  // Handle showing next card
+  const handleNextCard = () => {
+    if (currentCards.length === 0) {
+      console.log("SpacedRepetition - No cards to navigate");
+      return;
+    }
+    
+    if (currentIndex < currentCards.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setStudyCompleted(true);
+    }
+    setIsFlipped(false);
+    setShowFlipResponse(false);
+    setSelectedOption(null);
+    setShowAnswerFeedback(false);
+  };
 
   // Box information text
   const boxInfo = {
@@ -511,7 +555,7 @@ const SpacedRepetition = ({
             </div>
             <button
               className="next-button"
-              onClick={nextCard}
+              onClick={handleNextCard}
               disabled={currentIndex === currentCards.length - 1}
             >
               Next

@@ -253,28 +253,26 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Generate topics using OpenAI API
   const generateTopics = async (examBoard, examType, subject) => {
     try {
-      // Create prompt for topic generation with hierarchical structure
-      const prompt = `Generate a list of 8-10 specific, real-world topics for ${examBoard} ${examType} ${subject}. 
+      // Create prompt for topic generation with a flat list structure that includes subtopics
+      const prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
       These should be actual curriculum topics in this exact subject according to this exam board's specification. 
+      Include both main topics and subtopics in a single flat list.
+      
       Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
       
-      Each topic should include:
-      1. A main topic name
-      2. A short description of what this topic covers (2-3 sentences)
-      3. 3-5 sub-topics that are specific components or concepts within the main topic
+      Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
       
-      For example, in Chemistry, a topic might be "Organic Reaction Mechanisms" with sub-topics like "Nucleophilic Substitution", "Electrophilic Addition", etc.
+      For example, in Chemistry, you might include:
+      - "Organic Chemistry"
+      - "Organic Chemistry: Alkanes and Alkenes"
+      - "Organic Chemistry: Addition Reactions"
+      - "Periodic Table"
+      - "Periodic Table: Group 1 Elements"
       
       Focus on differentiation between ${examType} levels, ensuring appropriate complexity.
       
-      Return ONLY a valid JSON array of objects with the format: 
-      [
-        {
-          "topic": "Main Topic Name", 
-          "description": "Description of what this topic covers in 2-3 sentences.",
-          "subTopics": ["Sub-topic 1", "Sub-topic 2", "Sub-topic 3", "Sub-topic 4"]
-        }
-      ]
+      Return ONLY a valid JSON array of strings with the format: 
+      ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
       
       IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
       
@@ -320,14 +318,13 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         throw new Error("Invalid response format from AI for topics. Please try again.");
       }
       
-      // Store the hierarchical topics
-      setHierarchicalTopics(topicsData);
+      // Store the topics
+      setHierarchicalTopics(topicsData.map(topic => ({
+        topic: topic
+      })));
       
-      // Extract just the topic names for the dropdown
-      const topics = topicsData.map(item => item.topic || "");
-      console.log("Generated topics:", topics);
-      
-      return topics;
+      // Return the topics for the dropdown
+      return topicsData;
     } catch (error) {
       console.error("Error generating topics:", error);
       throw error;
@@ -632,22 +629,18 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         </div>
         
         <div className="topics-list">
-          {hierarchicalTopics.map((topicData, index) => (
-            <div key={index} className="topic-card">
-              <h4>{topicData.topic}</h4>
-              <p className="topic-description">{topicData.description}</p>
-              {topicData.subTopics && topicData.subTopics.length > 0 && (
-                <div className="sub-topics">
-                  <h5>Sub-topics:</h5>
-                  <ul>
-                    {topicData.subTopics.map((subTopic, subIndex) => (
-                      <li key={subIndex}>{subTopic}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
+          {hierarchicalTopics.map((topicData, index) => {
+            // Check if it's a main topic or subtopic
+            const isSubtopic = topicData.topic.includes(":");
+            const mainTopic = isSubtopic ? topicData.topic.split(":")[0].trim() : topicData.topic;
+            const subtopic = isSubtopic ? topicData.topic.split(":")[1].trim() : null;
+            
+            return (
+              <div key={index} className={`topic-card ${isSubtopic ? 'subtopic' : 'main-topic'}`}>
+                <h4>{topicData.topic}</h4>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -1060,59 +1053,11 @@ Use this format for different question types:
             
             <div className="form-group">
               <label>Topic</label>
-              {isGenerating ? (
-                <div className="loading-indicator">
-                  <p>Generating topics for {formData.subject}...</p>
-                  <div className="spinner"></div>
-                </div>
-              ) : (
-                <>
-                  {availableTopics.length > 0 ? (
-                    <select
-                      name="topic"
-                      value={formData.topic}
-                      onChange={handleChange}
-                    >
-                      <option value="">Select a Topic</option>
-                      {availableTopics.map((topic) => (
-                        <option key={topic} value={topic}>
-                          {topic}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="no-topics-message">
-                      <p>No topics generated yet. Click "Generate Topics" to continue.</p>
-                    </div>
-                  )}
-                  
-                  <button
-                    className="generate-button"
-                    onClick={async () => {
-                      try {
-                        setIsGenerating(true);
-                        setError(null);
-                        const topics = await generateTopics(
-                          formData.examBoard,
-                          formData.examType,
-                          formData.subject || formData.newSubject
-                        );
-                        setAvailableTopics(topics);
-                      } catch (err) {
-                        setError(err.message);
-                      } finally {
-                        setIsGenerating(false);
-                      }
-                    }}
-                  >
-                    Generate Topics
-                  </button>
-                  
-                  {/* Display hierarchical topics */}
-                  {renderHierarchicalTopics()}
-                </>
-              )}
+              {renderTopicSelectionUI()}
             </div>
+            
+            {/* Display hierarchical topics */}
+            {!isGenerating && hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
             
             <div className="form-group">
               <label>Or Add New Topic</label>
@@ -1121,11 +1066,9 @@ Use this format for different question types:
                 name="newTopic"
                 value={formData.newTopic}
                 onChange={handleChange}
-                placeholder="Enter a new topic name"
+                placeholder="Enter a new topic"
               />
             </div>
-            
-            {error && <div className="error-message">{error}</div>}
           </div>
         );
         
@@ -1283,6 +1226,63 @@ Use this format for different question types:
     }
   };
 
+  // Render topic selection UI with loading indicator
+  const renderTopicSelectionUI = () => {
+    return (
+      <div className="topic-selection-container">
+        {isGenerating ? (
+          <div className="loading-indicator">
+            <p>Generating topics for {formData.subject || formData.newSubject}...</p>
+            <div className="spinner"></div>
+          </div>
+        ) : (
+          <>
+            {availableTopics.length > 0 ? (
+              <select
+                name="topic"
+                value={formData.topic}
+                onChange={handleChange}
+              >
+                <option value="">Select a Topic</option>
+                {availableTopics.map((topic) => (
+                  <option key={topic} value={topic}>
+                    {topic}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="no-topics-message">
+                <p>No topics generated yet. Click "Generate Topics" to continue.</p>
+              </div>
+            )}
+            
+            <button
+              className="generate-button"
+              onClick={async () => {
+                try {
+                  setIsGenerating(true);
+                  setError(null);
+                  const topics = await generateTopics(
+                    formData.examBoard,
+                    formData.examType,
+                    formData.subject || formData.newSubject
+                  );
+                  setAvailableTopics(topics);
+                } catch (err) {
+                  setError(err.message);
+                } finally {
+                  setIsGenerating(false);
+                }
+              }}
+            >
+              Generate Topics
+            </button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="ai-card-generator">
       {renderSaveTopicDialog()}
@@ -1310,9 +1310,6 @@ Use this format for different question types:
         {currentStep === 1 && renderSavedTopicLists()}
         
         {renderStepContent()}
-        
-        {/* Render hierarchical topics after topic generation in step 4 */}
-        {currentStep === 4 && hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
       </div>
       
       <div className="generator-controls">
