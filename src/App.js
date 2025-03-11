@@ -85,6 +85,7 @@ function App() {
     cards.forEach((card) => {
       const boxNum = card.boxNum || 1;
       if (boxNum >= 1 && boxNum <= 5) {
+        // Store just the card ID as a string
         newSpacedRepetitionData[`box${boxNum}`].push(card.id);
       }
     });
@@ -367,34 +368,6 @@ function App() {
     (cardId, box) => {
       console.log(`Moving card ${cardId} to box ${box}`);
 
-      // Calculate the next review date based on the box number
-      const calculateNextReviewDate = (boxNumber) => {
-        const today = new Date();
-        let nextDate = new Date(today);
-        
-        switch (boxNumber) {
-          case 1: // Review next day
-            nextDate.setDate(today.getDate() + 1);
-            break;
-          case 2: // Every 2 days
-            nextDate.setDate(today.getDate() + 2);
-            break;
-          case 3: // Every 3 days
-            nextDate.setDate(today.getDate() + 3);
-            break;
-          case 4: // Every 7 days
-            nextDate.setDate(today.getDate() + 7);
-            break;
-          case 5: // Retired, but check after 21 days
-            nextDate.setDate(today.getDate() + 21);
-            break;
-          default:
-            nextDate.setDate(today.getDate() + 1);
-        }
-        
-        return nextDate.toISOString();
-      };
-
       // Ensure cardId is a string
       const stringCardId = String(cardId).trim();
       
@@ -405,19 +378,20 @@ function App() {
         // Remove the card from its current box (if it exists)
         for (let i = 1; i <= 5; i++) {
           newData[`box${i}`] = newData[`box${i}`].filter(
-            (item) => String(item.cardId).trim() !== stringCardId
+            (item) => {
+              if (typeof item === 'string') {
+                return item !== stringCardId;
+              } else if (item && typeof item === 'object') {
+                return String(item.cardId).trim() !== stringCardId;
+              }
+              return true;
+            }
           );
         }
 
-        // Add the card to the new box with last reviewed date and next review date
+        // Add the card to the new box - store as string ID for compatibility
         const targetBox = `box${box}`;
-        const today = new Date();
-        
-        newData[targetBox].push({
-          cardId: stringCardId,
-          lastReviewed: today.toISOString(),
-          nextReviewDate: calculateNextReviewDate(box)
-        });
+        newData[targetBox].push(stringCardId);
 
         // Update the Knack notification fields on the next save
         setKnackFieldsNeedUpdate(true);

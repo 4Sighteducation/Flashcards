@@ -31,6 +31,9 @@ const SpacedRepetition = ({
   const [showReviewDateMessage, setShowReviewDateMessage] = useState(false);
   const [nextReviewDate, setNextReviewDate] = useState(null);
 
+  // Add state for info modal
+  const [showInfoModal, setShowInfoModal] = useState(false);
+
   // Group cards by subject and topic and filter for review availability
   useEffect(() => {
     if (cards.length > 0) {
@@ -52,7 +55,15 @@ const SpacedRepetition = ({
       let filtered = cards.filter(card => {
         // First check if card is in the current box
         const cardInBox = spacedRepetitionData[`box${currentBox}`]?.some(
-          boxCard => boxCard.cardId === card.id
+          boxCardId => {
+            // Handle both formats: string IDs or objects with cardId
+            if (typeof boxCardId === 'string') {
+              return boxCardId === card.id;
+            } else if (boxCardId && typeof boxCardId === 'object') {
+              return boxCardId.cardId === card.id;
+            }
+            return false;
+          }
         );
         
         // If not in the box, exclude it
@@ -79,9 +90,11 @@ const SpacedRepetition = ({
       // Mark cards as reviewable or not, but include all of them
       const cardsWithReviewStatus = filtered.map(card => {
         // Find the card in the spacedRepetitionData
-        const boxCard = spacedRepetitionData[`box${currentBox}`]?.find(
-          boxCard => boxCard.cardId === card.id
-        );
+        const boxCard = typeof spacedRepetitionData[`box${currentBox}`][0] === 'string' 
+          ? { cardId: card.id, isReviewable: true } // If we're using string IDs, assume reviewable
+          : spacedRepetitionData[`box${currentBox}`]?.find(
+              boxCard => boxCard.cardId === card.id
+            );
         
         if (boxCard && boxCard.nextReviewDate) {
           const nextReviewDate = new Date(boxCard.nextReviewDate);
@@ -307,6 +320,12 @@ const SpacedRepetition = ({
     setSelectedTopic(topic);
   };
 
+  // Add a function to toggle the info modal
+  const toggleInfoModal = (e) => {
+    if (e) e.stopPropagation(); // Prevent card flip
+    setShowInfoModal(!showInfoModal);
+  };
+
   // Render the completed view when all cards are done
   if (studyCompleted) {
     return (
@@ -502,6 +521,15 @@ const SpacedRepetition = ({
                   <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
                   <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
                 </div>
+                {currentCards[currentIndex].additionalInfo && (
+                  <button 
+                    className="info-btn" 
+                    onClick={toggleInfoModal}
+                    style={{ position: 'absolute', top: '10px', left: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                  >
+                    ℹ️
+                  </button>
+                )}
                 <div
                   className="card-content"
                   dangerouslySetInnerHTML={{
@@ -534,12 +562,6 @@ const SpacedRepetition = ({
                       "No answer"
                   }}
                 />
-                {currentCards[currentIndex].additionalInfo && (
-                  <div className="additional-info">
-                    <h4>Additional Information:</h4>
-                    <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo }} />
-                  </div>
-                )}
                 {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               </div>
             </div>
@@ -637,6 +659,20 @@ const SpacedRepetition = ({
             There are no cards in this box for the selected subject/topic.
             Please select a different box, subject, or topic, or add more cards to your collection.
           </p>
+        </div>
+      )}
+
+      {showInfoModal && currentCards.length > 0 && (
+        <div className="info-modal-overlay" onClick={toggleInfoModal}>
+          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="info-modal-header">
+              <h3>Additional Information</h3>
+              <button className="close-modal-btn" onClick={toggleInfoModal}>✕</button>
+            </div>
+            <div className="info-modal-content">
+              <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo || "No additional information available." }} />
+            </div>
+          </div>
         </div>
       )}
     </div>
