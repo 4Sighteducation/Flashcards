@@ -282,3 +282,5 @@ const SpacedRepetition = ({
     </div>
   );
 };
+
+export default SpacedRepetition;
