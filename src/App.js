@@ -601,9 +601,15 @@ function App() {
         cardId = boxItem.cardId;
         
         if (boxItem.nextReviewDate) {
-          nextReviewDate = new Date(boxItem.nextReviewDate);
-          // Card is reviewable if the next review date is today or earlier
-          isReviewable = nextReviewDate <= today;
+          try {
+            nextReviewDate = new Date(boxItem.nextReviewDate);
+            // Card is reviewable if the next review date is today or earlier
+            isReviewable = nextReviewDate <= today;
+          } catch (e) {
+            console.warn(`Invalid date format for nextReviewDate: ${boxItem.nextReviewDate}`);
+            nextReviewDate = null;
+            isReviewable = true;
+          }
         }
       } else {
         console.warn("Invalid box item, skipping", boxItem);
@@ -618,7 +624,8 @@ function App() {
       // Find the matching card
       const matchingCard = allCards.find(card => {
         // Try multiple matching approaches
-        return card.id === cardId || 
+        return String(card.id) === String(cardId) || 
+               card.id === cardId ||
                String(card.id).trim() === String(cardId).trim();
       });
       

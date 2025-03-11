@@ -325,7 +325,12 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           
           <div className="flashcard-back" style={{ color: textColor }}>
             <ScaledText maxFontSize={14}>
-              <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
+              <div dangerouslySetInnerHTML={{ 
+                __html: card.back || 
+                  (card.questionType === 'multiple_choice' ? 
+                    `Correct Answer: ${card.correctAnswer}<br><br>${card.detailedAnswer || ''}` : 
+                    card.detailedAnswer || "No answer") 
+              }} />
             </ScaledText>
             
             {card.boxNum !== undefined && (
