@@ -504,7 +504,8 @@ const SpacedRepetition = ({
                   <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
                   <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
                 </div>
-                {currentCards[currentIndex].additionalInfo && (
+                {/* Check for either additionalInfo or detailedAnswer */}
+                {(currentCards[currentIndex].additionalInfo || currentCards[currentIndex].detailedAnswer) && (
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
@@ -543,7 +544,8 @@ const SpacedRepetition = ({
                   <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
                   <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
                 </div>
-                {currentCards[currentIndex].additionalInfo && (
+                {/* Check for either additionalInfo or detailedAnswer */}
+                {(currentCards[currentIndex].additionalInfo || currentCards[currentIndex].detailedAnswer) && (
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
@@ -556,9 +558,10 @@ const SpacedRepetition = ({
                   dangerouslySetInnerHTML={{
                     __html:
                       currentCards[currentIndex].back ||
-                      currentCards[currentIndex].detailedAnswer ||
-                      currentCards[currentIndex].correctAnswer ||
-                      "No answer"
+                      (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
+                        currentCards[currentIndex].detailedAnswer : 
+                        currentCards[currentIndex].correctAnswer || 
+                        "No answer")
                   }}
                 />
                 {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
@@ -672,7 +675,7 @@ const SpacedRepetition = ({
               <button className="close-modal-btn" onClick={toggleInfoModal}>✕</button>
             </div>
             <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo || "No additional information available." }} />
+              <div dangerouslySetInnerHTML={{ __html: currentCards[currentIndex].additionalInfo || currentCards[currentIndex].detailedAnswer || "No additional information available." }} />
             </div>
           </div>
         </div>

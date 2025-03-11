@@ -233,7 +233,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
   const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options);
   
   // Check if card has additional information
-  const hasAdditionalInfo = card.additionalInfo || card.notes;
+  const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
   
   return (
     <>
@@ -355,7 +355,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
               <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
             </div>
             <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.notes || "No additional information available." }} />
+              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.detailedAnswer || "No additional information available." }} />
             </div>
           </div>
         </div>
