@@ -98,13 +98,12 @@ const SpacedRepetition = ({
   useEffect(() => {
     // Reset index when cards change
     setCurrentIndex(0);
-    setShowFlipResponse(false);
-    setIsFlipped(false);
     setStudyCompleted(false);
     
-    // Include all cards, not just reviewable ones
+    // Use all filtered cards regardless of review state
     setCurrentCards(filteredCards);
-    console.log("SpacedRepetition - Updated current cards:", filteredCards);
+    
+    console.log("Current cards updated:", filteredCards);
   }, [filteredCards]);
 
   // When going to a new card, reset the flip state
@@ -195,8 +194,8 @@ const SpacedRepetition = ({
       const currentCard = currentCards[currentIndex];
       
       if (!currentCard.isReviewable) {
-        // Since we don't have nextReviewDate anymore, just show a generic message
-        setNextReviewDate(new Date(Date.now() + 24 * 60 * 60 * 1000)); // Tomorrow as fallback
+        // Show a message with the actual next review date
+        setNextReviewDate(new Date(currentCard.nextReviewDate));
         setShowReviewDateMessage(true);
         return;
       }
@@ -280,11 +279,23 @@ const SpacedRepetition = ({
   const handleSubjectSelect = (subject) => {
     setSelectedSubject(subject);
     setSelectedTopic(null);
+    
+    // Reset study state when changing subjects
+    setCurrentIndex(0);
+    setShowFlipResponse(false);
+    setIsFlipped(false);
+    setStudyCompleted(false);
   };
 
   // Handle topic selection
   const handleTopicSelect = (topic) => {
     setSelectedTopic(topic);
+    
+    // Reset study state when changing topics
+    setCurrentIndex(0);
+    setShowFlipResponse(false);
+    setIsFlipped(false);
+    setStudyCompleted(false);
   };
 
   // Add a function to toggle the info modal
@@ -486,7 +497,7 @@ const SpacedRepetition = ({
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
-                    style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                    style={{ position: 'absolute', top: '10px', left: '10px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
                   >
                     ℹ️
                   </button>
@@ -512,7 +523,8 @@ const SpacedRepetition = ({
                 
                 {!currentCards[currentIndex].isReviewable && (
                   <div className="review-date-overlay">
-                    <p>Not yet ready for review</p>
+                    <p>This card is locked until</p>
+                    <p className="next-review-date">{new Date(currentCards[currentIndex].nextReviewDate).toLocaleDateString()}</p>
                   </div>
                 )}
               </div>
@@ -610,13 +622,16 @@ const SpacedRepetition = ({
           {/* Review date message dialog */}
           {showReviewDateMessage && (
             <div className="review-date-message">
-              <h3>Not Ready for Review</h3>
+              <h3>Card Locked Until Next Review Date</h3>
               <p>
-                This card has been reviewed already. Please wait until{" "}
-                {nextReviewDate ? nextReviewDate.toLocaleDateString() : "later"} before reviewing again.
+                This card has already been reviewed and is currently locked. It will be available for review on{" "}
+                <strong>{nextReviewDate ? nextReviewDate.toLocaleDateString() : "a future date"}</strong>.
+              </p>
+              <p>
+                This spacing helps reinforce your memory according to proven spaced repetition techniques.
               </p>
               <div className="review-date-actions">
-                <button onClick={() => setShowReviewDateMessage(false)}>OK</button>
+                <button onClick={() => setShowReviewDateMessage(false)}>Got it</button>
               </div>
             </div>
           )}
