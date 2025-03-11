@@ -310,6 +310,16 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
                 <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
               </ScaledText>
             )}
+            
+            {hasAdditionalInfo && (
+              <button 
+                className="info-btn card-front-info" 
+                onClick={toggleInfoModal}
+                style={{ color: textColor }}
+              >
+                ℹ️
+              </button>
+            )}
           </div>
           
           <div className="flashcard-back">
@@ -317,13 +327,14 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
               <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
             </ScaledText>
             
-            {card.additionalInfo && (
-              <div className="additional-info">
-                <h4 style={{ marginTop: '10px', fontSize: '12px' }}>Additional Information:</h4>
-                <ScaledText maxFontSize={12}>
-                  <div dangerouslySetInnerHTML={{ __html: card.additionalInfo }} />
-                </ScaledText>
-              </div>
+            {hasAdditionalInfo && (
+              <button 
+                className="info-btn card-back-info" 
+                onClick={toggleInfoModal}
+                style={{ color: textColor }}
+              >
+                ℹ️
+              </button>
             )}
             
             {card.boxNum !== undefined && (

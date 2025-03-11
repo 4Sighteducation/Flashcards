@@ -543,6 +543,14 @@ const SpacedRepetition = ({
                   <span className="card-subject">{currentCards[currentIndex].subject || "General"}</span>
                   <span className="card-topic">{currentCards[currentIndex].topic || ""}</span>
                 </div>
+                {currentCards[currentIndex].additionalInfo && (
+                  <button 
+                    className="info-btn" 
+                    onClick={toggleInfoModal}
+                  >
+                    ℹ️
+                  </button>
+                )}
                 <div
                   className="card-content"
                   dangerouslySetInnerHTML={{
