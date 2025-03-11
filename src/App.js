@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import FlashcardList from "./components/FlashcardList";
 import SubjectsList from "./components/SubjectsList";
@@ -8,6 +8,20 @@ import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
+import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
+
+// API Keys and constants
+const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254bb62b";
+const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
+
+// Box descriptions
+const BOX_DESCRIPTIONS = {
+  1: "New cards start here. Review these daily. When answered correctly, they move to Box 2; otherwise they stay here.",
+  2: "Review these cards every other day. Correct responses move them to Box 3; if missed or answered incorrectly, they return to Box 1.",
+  3: "Review these cards every 3 days. Correct responses move them to Box 4; if incorrect or overdue, they return to Box 1.",
+  4: "Review these cards weekly. Correct responses move them to Box 5; if incorrect, they return to Box 1.",
+  5: "Cards here remain indefinitely unless answered incorrectly, which returns them to Box 1."
+};
 
 function App() {
   // Authentication and user state
