@@ -26,8 +26,12 @@ const SpacedRepetition = ({
   const [selectedOption, setSelectedOption] = useState(null);
   const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
+  
+  // Add new state for review date checking
+  const [showReviewDateMessage, setShowReviewDateMessage] = useState(false);
+  const [nextReviewDate, setNextReviewDate] = useState(null);
 
-  // Group cards by subject and topic
+  // Group cards by subject and topic and filter for review availability
   useEffect(() => {
     if (cards.length > 0) {
       // Extract unique subjects from cards
@@ -42,36 +46,84 @@ const SpacedRepetition = ({
             .map(card => card.topic || "General")
         )];
         setTopics(topicsForSubject);
-      } else if (uniqueSubjects.length > 0) {
-        // Auto-select first subject if none selected
-        setSelectedSubject(uniqueSubjects[0]);
       }
-    }
-  }, [cards, selectedSubject]);
-
-  // Filter cards when subject or topic changes
-  useEffect(() => {
-    let filtered = [...cards];
-    
-    if (selectedSubject) {
-      filtered = filtered.filter(card => (card.subject || "General") === selectedSubject);
       
-      if (selectedTopic) {
-        filtered = filtered.filter(card => (card.topic || "General") === selectedTopic);
-      }
+      // Filter cards by current box, subject and topic
+      let filtered = cards.filter(card => {
+        // First check if card is in the current box
+        const cardInBox = spacedRepetitionData[`box${currentBox}`]?.some(
+          boxCard => boxCard.cardId === card.id
+        );
+        
+        // If not in the box, exclude it
+        if (!cardInBox) return false;
+        
+        // If subject filter is active, check subject
+        if (selectedSubject && (card.subject || "General") !== selectedSubject) {
+          return false;
+        }
+        
+        // If topic filter is active, check topic
+        if (selectedTopic && (card.topic || "General") !== selectedTopic) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Check review dates and sort by availability
+      const today = new Date();
+      
+      // Separate cards into ready for review and not ready
+      const readyForReview = [];
+      const notReadyForReview = [];
+      
+      filtered.forEach(card => {
+        // Find the card in the spacedRepetitionData
+        const boxCard = spacedRepetitionData[`box${currentBox}`]?.find(
+          boxCard => boxCard.cardId === card.id
+        );
+        
+        if (boxCard && boxCard.nextReviewDate) {
+          const nextReviewDate = new Date(boxCard.nextReviewDate);
+          
+          // Add a property to indicate if the card is reviewable
+          const reviewableCard = {
+            ...card,
+            isReviewable: nextReviewDate <= today,
+            nextReviewDate: boxCard.nextReviewDate
+          };
+          
+          if (reviewableCard.isReviewable) {
+            readyForReview.push(reviewableCard);
+          } else {
+            notReadyForReview.push(reviewableCard);
+          }
+        } else {
+          // If no review date, assume it's reviewable
+          readyForReview.push({
+            ...card,
+            isReviewable: true
+          });
+        }
+      });
+      
+      // Sort ready cards first, then not ready
+      setFilteredCards([...readyForReview, ...notReadyForReview]);
+    } else {
+      setFilteredCards([]);
     }
-    
-    setFilteredCards(filtered);
-  }, [cards, selectedSubject, selectedTopic]);
+  }, [cards, currentBox, selectedSubject, selectedTopic, spacedRepetitionData]);
 
-  // Update current cards when filtered cards change
+  // Update current cards
   useEffect(() => {
-    setCurrentCards(filteredCards);
+    // Reset index when cards change
     setCurrentIndex(0);
-    setIsFlipped(false);
-    setShowFlipResponse(false);
     setStudyCompleted(false);
-  }, [filteredCards, currentBox]);
+    
+    // Set the current cards
+    setCurrentCards(filteredCards);
+  }, [filteredCards]);
 
   // Box information text
   const boxInfo = {
@@ -113,13 +165,28 @@ const SpacedRepetition = ({
 
   // When a card is flipped to reveal the answer
   const handleCardFlip = () => {
-    if (!isFlipped && currentCards.length > 0) {
-      setIsFlipped(true);
-
-      // Show response buttons after a delay
-      setTimeout(() => {
-        setShowFlipResponse(true);
-      }, 1000);
+    // Check if the card is reviewable before allowing flip
+    if (currentCards.length > 0 && currentIndex < currentCards.length) {
+      const currentCard = currentCards[currentIndex];
+      
+      if (!currentCard.isReviewable) {
+        // Show review date message
+        setNextReviewDate(new Date(currentCard.nextReviewDate));
+        setShowReviewDateMessage(true);
+        return;
+      }
+      
+      // Proceed with normal flip if reviewable
+      setIsFlipped(!isFlipped);
+      
+      if (!isFlipped) {
+        // Set a timeout to show the response buttons after the card is flipped
+        setTimeout(() => {
+          setShowFlipResponse(true);
+        }, 500);
+      } else {
+        setShowFlipResponse(false);
+      }
     }
   };
 
@@ -284,19 +351,39 @@ const SpacedRepetition = ({
   return (
     <div className="spaced-repetition">
       <div className="box-info">
-        <h2>{boxInfo[currentBox]?.title}</h2>
-        <p>{boxInfo[currentBox]?.explanation}</p>
+        <h2>Spaced Repetition</h2>
+        <p>
+          You are reviewing cards in Box {currentBox}. {" "}
+          {currentBox === 1 && "Review daily."}
+          {currentBox === 2 && "Review every 2 days."}
+          {currentBox === 3 && "Review every 3 days."}
+          {currentBox === 4 && "Review every 7 days."}
+          {currentBox === 5 && "These cards are mastered. Occasional review."}
+        </p>
       </div>
-
+      
       <div className="box-navigation">
+        <button className="return-button" onClick={onReturnToBank}>
+          Return to Card Bank
+        </button>
+        
         <div className="box-buttons">
-          {[1, 2, 3, 4, 5].map((boxNum) => (
+          {[1, 2, 3, 4, 5].map((box) => (
             <button
-              key={boxNum}
-              className={`box-button ${boxNum === currentBox ? "active" : ""}`}
-              onClick={() => onSelectBox(boxNum)}
+              key={box}
+              className={`box-button ${currentBox === box ? "active" : ""} ${
+                spacedRepetitionData[`box${box}`]?.some(card => {
+                  if (!card.nextReviewDate) return true;
+                  const reviewDate = new Date(card.nextReviewDate);
+                  return reviewDate <= new Date();
+                }) ? "glowing" : ""
+              }`}
+              onClick={() => onSelectBox(box)}
             >
-              Box {boxNum} ({boxCounts[boxNum]})
+              Box {box}
+              <span className="card-count">
+                ({spacedRepetitionData[`box${box}`]?.length || 0})
+              </span>
             </button>
           ))}
         </div>
@@ -304,13 +391,24 @@ const SpacedRepetition = ({
 
       <div className="subject-topic-selection">
         <div className="subject-selector">
-          <h3>Select Subject:</h3>
+          <h3>Filter by Subject</h3>
           <div className="subject-list">
-            {subjects.map((subject) => (
+            <div 
+              className={`subject-item ${selectedSubject === null ? "selected" : ""}`}
+              onClick={() => handleSubjectSelect(null)}
+            >
+              All Subjects
+            </div>
+            {subjects.map(subject => (
               <div 
                 key={subject}
-                className={`subject-item ${selectedSubject === subject ? 'selected' : ''}`}
+                className={`subject-item ${selectedSubject === subject ? "selected" : ""}`}
                 onClick={() => handleSubjectSelect(subject)}
+                style={{
+                  backgroundColor: selectedSubject === subject ? 
+                    subject === "General" ? "#06206e" : currentCards.find(card => card.subject === subject)?.cardColor || "#06206e" : 
+                    "inherit"
+                }}
               >
                 {subject}
               </div>
@@ -320,18 +418,18 @@ const SpacedRepetition = ({
         
         {selectedSubject && (
           <div className="topic-selector">
-            <h3>Select Topic:</h3>
+            <h3>Filter by Topic</h3>
             <div className="topic-list">
               <div 
-                className={`topic-item ${selectedTopic === null ? 'selected' : ''}`}
+                className={`topic-item ${selectedTopic === null ? "selected" : ""}`}
                 onClick={() => handleTopicSelect(null)}
               >
                 All Topics
               </div>
-              {topics.map((topic) => (
+              {topics.map(topic => (
                 <div 
                   key={topic}
-                  className={`topic-item ${selectedTopic === topic ? 'selected' : ''}`}
+                  className={`topic-item ${selectedTopic === topic ? "selected" : ""}`}
                   onClick={() => handleTopicSelect(topic)}
                 >
                   {topic}
@@ -342,14 +440,12 @@ const SpacedRepetition = ({
         )}
       </div>
 
-      <button className="return-button" onClick={onReturnToBank}>
-        Return to Card Bank
-      </button>
-
       {currentCards.length > 0 ? (
         <div className="card-study-area">
           <div
-            className={`study-card ${isFlipped ? "flipped" : ""}`}
+            className={`study-card ${isFlipped ? "flipped" : ""} ${
+              !currentCards[currentIndex].isReviewable ? "not-reviewable" : ""
+            }`}
             onClick={handleCardFlip}
             style={{
               '--card-color': currentCards[currentIndex].cardColor || '#ffffff'
@@ -371,6 +467,12 @@ const SpacedRepetition = ({
                   }}
                 />
                 {currentCards[currentIndex].questionType === 'multiple_choice' && !isFlipped && renderMultipleChoice(currentCards[currentIndex])}
+                
+                {!currentCards[currentIndex].isReviewable && (
+                  <div className="review-date-overlay">
+                    <p>Not yet ready for review</p>
+                  </div>
+                )}
               </div>
               <div className="card-back">
                 <div className="card-subject-topic">
@@ -459,6 +561,20 @@ const SpacedRepetition = ({
                 >
                   {isCorrectAnswer ? "Continue" : "Move to Box 1"}
                 </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Review date message dialog */}
+          {showReviewDateMessage && (
+            <div className="review-date-message">
+              <h3>Not Ready for Review</h3>
+              <p>
+                This card has been reviewed already. Please wait until{" "}
+                {nextReviewDate ? nextReviewDate.toLocaleDateString() : "later"} before reviewing again.
+              </p>
+              <div className="review-date-actions">
+                <button onClick={() => setShowReviewDateMessage(false)}>OK</button>
               </div>
             </div>
           )}

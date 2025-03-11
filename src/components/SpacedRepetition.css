@@ -71,10 +71,10 @@
 
 @keyframes glowing {
   from {
-    box-shadow: 0 0 5px #06206e;
+    box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6;
   }
   to {
-    box-shadow: 0 0 15px #06206e;
+    box-shadow: 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6;
   }
 }
 
@@ -519,4 +519,78 @@
   .multiple-choice-options li {
     font-size: 1rem;
   }
+}
+
+/* Non-reviewable cards */
+.study-card.not-reviewable {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.review-date-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  text-align: center;
+  padding: 20px;
+}
+
+.review-date-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  z-index: 1000;
+  width: 90%;
+  max-width: 400px;
+}
+
+.review-date-message h3 {
+  color: #d32f2f;
+  margin-top: 0;
+}
+
+.review-date-message p {
+  margin: 15px 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+.review-date-actions {
+  margin-top: 20px;
+}
+
+.review-date-actions button {
+  background-color: #06206e;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.review-date-actions button:hover {
+  background-color: #0a3697;
+}
+
+.card-count {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-left: 4px;
 }

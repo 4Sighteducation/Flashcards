@@ -348,31 +348,148 @@ function App() {
     [updateSpacedRepetitionData, updateColorMapping, saveData, showStatus]
   );
 
-  // Move card between spaced repetition boxes
+  // Move a card to a specific box in spaced repetition
   const moveCardToBox = useCallback(
-    (cardId, targetBox) => {
-      setAllCards((prevCards) => {
-        const updatedCards = prevCards.map((card) => {
-          if (card.id === cardId) {
-            return {
-              ...card,
-              boxNum: targetBox,
-              SRFlag: true,
-              timestamp: new Date().toISOString(),
-            };
-          }
-          return card;
+    (cardId, box) => {
+      console.log(`Moving card ${cardId} to box ${box}`);
+
+      // Calculate the next review date based on the box number
+      const calculateNextReviewDate = (boxNumber) => {
+        const today = new Date();
+        let nextDate = new Date(today);
+        
+        switch (boxNumber) {
+          case 1: // Review next day
+            nextDate.setDate(today.getDate() + 1);
+            break;
+          case 2: // Every 2 days
+            nextDate.setDate(today.getDate() + 2);
+            break;
+          case 3: // Every 3 days
+            nextDate.setDate(today.getDate() + 3);
+            break;
+          case 4: // Every 7 days
+            nextDate.setDate(today.getDate() + 7);
+            break;
+          case 5: // Retired, but check after 21 days
+            nextDate.setDate(today.getDate() + 21);
+            break;
+          default:
+            nextDate.setDate(today.getDate() + 1);
+        }
+        
+        return nextDate.toISOString();
+      };
+
+      setSpacedRepetitionData((prevData) => {
+        // Create a new object to avoid direct state mutation
+        const newData = { ...prevData };
+
+        // Remove the card from its current box (if it exists)
+        for (let i = 1; i <= 5; i++) {
+          newData[`box${i}`] = newData[`box${i}`].filter(
+            (item) => item.cardId !== cardId
+          );
+        }
+
+        // Add the card to the new box with last reviewed date and next review date
+        const targetBox = `box${box}`;
+        const today = new Date();
+        
+        newData[targetBox].push({
+          cardId: cardId,
+          lastReviewed: today.toISOString(),
+          nextReviewDate: calculateNextReviewDate(box)
         });
 
-        updateSpacedRepetitionData(updatedCards);
-        return updatedCards;
+        // Update the Knack notification fields on the next save
+        setKnackFieldsNeedUpdate(true);
+        
+        return newData;
       });
       
-      // Save the changes after state updates have completed
-      setTimeout(() => saveData(), 500);
+      // Save the updated data
+      setTimeout(() => saveData(), 100);
+      console.log(`Card ${cardId} moved to box ${box}`);
     },
-    [updateSpacedRepetitionData, saveData]
+    [saveData]
   );
+
+  // Add state to track if Knack fields need updating
+  const [knackFieldsNeedUpdate, setKnackFieldsNeedUpdate] = useState(false);
+
+  // Update Knack boolean fields for box notifications
+  const updateKnackBoxNotifications = useCallback(async () => {
+    if (!auth || !knackFieldsNeedUpdate) return;
+    
+    try {
+      console.log("Updating Knack box notification fields...");
+      
+      // Check if there are cards ready for review in each box
+      const today = new Date();
+      
+      // Prepare box status data
+      const boxStatus = {
+        field_2991: false, // Box 1
+        field_2992: false, // Box 2
+        field_2993: false, // Box 3
+        field_2994: false, // Box 4
+        field_2995: false  // Box 5
+      };
+      
+      // Check each box for cards ready for review
+      for (let i = 1; i <= 5; i++) {
+        const boxKey = `box${i}`;
+        const fieldKey = `field_299${i}`;
+        
+        // Box is ready if any card's next review date is today or earlier
+        boxStatus[fieldKey] = spacedRepetitionData[boxKey].some(card => {
+          const nextReviewDate = new Date(card.nextReviewDate);
+          return nextReviewDate <= today;
+        });
+        
+        // Special case for Box 5 - only if cards have been there for 3+ weeks
+        if (i === 5) {
+          boxStatus.field_2995 = spacedRepetitionData.box5.some(card => {
+            const lastReviewed = new Date(card.lastReviewed);
+            const threeWeeksAgo = new Date(today);
+            threeWeeksAgo.setDate(today.getDate() - 21);
+            return lastReviewed <= threeWeeksAgo;
+          });
+        }
+      }
+      
+      // Update Knack object with box status
+      if (auth.id) {
+        const updateUrl = `https://api.knack.com/v1/objects/object_102/records/${auth.id}`;
+        const response = await fetch(updateUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Knack-Application-ID": KNACK_APP_ID,
+            "X-Knack-REST-API-Key": KNACK_API_KEY
+          },
+          body: JSON.stringify(boxStatus)
+        });
+        
+        if (response.ok) {
+          console.log("Knack box notification fields updated successfully");
+          setKnackFieldsNeedUpdate(false);
+        } else {
+          console.error("Failed to update Knack box notification fields:", await response.json());
+        }
+      }
+    } catch (error) {
+      console.error("Error updating Knack box notifications:", error);
+    }
+  }, [auth, knackFieldsNeedUpdate, spacedRepetitionData]);
+
+  // Update Knack box notification fields when needed
+  useEffect(() => {
+    if (knackFieldsNeedUpdate && auth) {
+      updateKnackBoxNotifications();
+    }
+  }, [knackFieldsNeedUpdate, auth, updateKnackBoxNotifications]);
 
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {
