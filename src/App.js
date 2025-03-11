@@ -520,17 +520,45 @@ function App() {
       )}
 
       {view === "createCard" && (
-        <CardCreator
-          onAddCard={addCard}
-          onCancel={() => setView("cardBank")}
-          subjects={getSubjects()}
-          getTopicsForSubject={getTopicsForSubject}
-          currentColor={currentSubjectColor}
-          onColorChange={setCurrentSubjectColor}
-          getColorForSubjectTopic={getColorForSubjectTopic}
-          updateColorMapping={updateColorMapping}
-        />
-      )}
+  <>
+    <div className="create-card-options">
+      <button 
+        className="primary-button"
+        onClick={() => setView("aiGenerator")}
+      >
+        Generate Cards with AI
+      </button>
+      <span className="or-divider">OR</span>
+      <button 
+        className="secondary-button"
+        onClick={() => setView("manualCreate")}
+      >
+        Create Cards Manually
+      </button>
+    </div>
+  </>
+)}
+
+{view === "aiGenerator" && (
+  <AICardGenerator
+    onAddCard={addCard}
+    onClose={() => setView("cardBank")}
+    subjects={getSubjects()}
+  />
+)}
+
+{view === "manualCreate" && (
+  <CardCreator
+    onAddCard={addCard}
+    onCancel={() => setView("cardBank")}
+    subjects={getSubjects()}
+    getTopicsForSubject={getTopicsForSubject}
+    currentColor={currentSubjectColor}
+    onColorChange={setCurrentSubjectColor}
+    getColorForSubjectTopic={getColorForSubjectTopic}
+    updateColorMapping={updateColorMapping}
+  />
+)}
 
       {view === "spacedRepetition" && (
         <SpacedRepetition
