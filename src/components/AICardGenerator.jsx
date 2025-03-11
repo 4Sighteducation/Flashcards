@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
+import { generateTopicPrompt } from '../prompts/topicListPrompt';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
@@ -62,6 +63,9 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   
   // Results states
   const [generatedCards, setGeneratedCards] = useState([]);
+  
+  // Progress tracking
+  const [completedSteps, setCompletedSteps] = useState({});
   
   // New states for hierarchical topics and saved topic lists
   const [hierarchicalTopics, setHierarchicalTopics] = useState([]);
@@ -250,63 +254,19 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     }
   }, [formData.subject, formData.examBoard, formData.examType]);
 
-  // Generate topics using OpenAI API
+  // Generate topics using AI
   const generateTopics = async (examBoard, examType, subject) => {
     try {
-      // Special prompt for Music subjects to include specific composers and works
-      let prompt;
-      
-      if (subject.toLowerCase().includes("music")) {
-        prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
-        These should be actual curriculum topics in this exact subject according to this exam board's specification.
-        
-        For Music, be sure to include:
-        1. Specific composers (e.g., "Berlioz", "Mozart", "Beethoven")
-        2. Specific musical works (e.g., "Berlioz: Symphonie Fantastique", "Mozart: Symphony No. 41", "Beethoven: Symphony No. 9")
-        3. Music theory concepts (e.g., "Harmony: Cadences", "Counterpoint", "Orchestration")
-        4. Historical periods (e.g., "Baroque Music", "Classical Period", "Romantic Era")
-        
-        Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
-        
-        For example:
-        - "Berlioz"
-        - "Berlioz: Symphonie Fantastique"
-        - "Berlioz: Compositional Techniques"
-        - "Music Theory"
-        - "Music Theory: Harmony and Cadences"
-        
-        Return ONLY a valid JSON array of strings with the format: 
-        ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
-        
-        IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
-      } else {
-        // Standard prompt for other subjects
-        prompt = `Generate a comprehensive list of 15-20 specific topics for ${examBoard} ${examType} ${subject}. 
-        These should be actual curriculum topics in this exact subject according to this exam board's specification. 
-        Include both main topics and subtopics in a single flat list.
-        
-        Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
-        
-        Format topic names clearly, with main topics indicated by name only, and subtopics formatted as "Main Topic: Subtopic".
-        
-        For example, in Chemistry, you might include:
-        - "Organic Chemistry"
-        - "Organic Chemistry: Alkanes and Alkenes"
-        - "Organic Chemistry: Addition Reactions"
-        - "Periodic Table"
-        - "Periodic Table: Group 1 Elements"
-        
-        Focus on differentiation between ${examType} levels, ensuring appropriate complexity.
-        
-        Return ONLY a valid JSON array of strings with the format: 
-        ["Topic 1", "Main Topic: Subtopic 1", "Main Topic: Subtopic 2", ...]
-        
-        IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
+      if (!examBoard || !examType || !subject) {
+        throw new Error("Missing required parameters");
       }
       
-      console.log("Generating topics with prompt:", prompt);
+      console.log("Generating topics for:", examBoard, examType, subject);
       
-      // Make the API call to OpenAI
+      // Get the prompt from our new prompt file
+      const prompt = generateTopicPrompt(examBoard, examType, subject);
+      
+      // Make API call to OpenAI
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -316,46 +276,49 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         body: JSON.stringify({
           model: "gpt-4o",
           messages: [{ role: "user", content: prompt }],
-          max_tokens: 1500,
-          temperature: 0.3
+          max_tokens: 800,
+          temperature: 0.5
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Error calling OpenAI API");
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("No content returned from API");
       }
       
-      // Parse the response
-      const content = data.choices[0].message.content;
-      console.log("Raw response:", content);
-      const cleanedContent = cleanOpenAIResponse(content);
+      // Extract and clean the content
+      let content = data.choices[0].message.content;
+      content = content.replace(/```json|```/g, '').trim();
+      console.log("Raw topic response:", content);
       
-      let topicsData;
+      // Try to parse as JSON
+      let topics;
       try {
-        topicsData = JSON.parse(cleanedContent);
-        console.log("Parsed topics data:", topicsData);
+        topics = JSON.parse(content);
       } catch (e) {
-        console.error("Error parsing OpenAI response for topics:", e);
-        console.error("Cleaned content:", cleanedContent);
-        throw new Error("Failed to parse AI response for topics. Please try again.");
+        console.error("Failed to parse topic response as JSON:", e);
+        // Fall back to text processing if JSON parsing fails
+        topics = content.split('\n')
+          .filter(line => line.trim().length > 0)
+          .map(line => line.replace(/^[-*•]\s*/, '').trim());
       }
       
-      if (!Array.isArray(topicsData) || topicsData.length === 0) {
-        throw new Error("Invalid response format from AI for topics. Please try again.");
+      // Ensure we have an array
+      if (!Array.isArray(topics)) {
+        console.error("Unexpected response format:", topics);
+        throw new Error("Invalid topic format received");
       }
       
-      // Store the topics
-      setHierarchicalTopics(topicsData.map(topic => ({
-        topic: topic
-      })));
-      
-      // Return the topics for the dropdown
-      return topicsData;
+      console.log("Generated topics:", topics);
+      return topics;
     } catch (error) {
       console.error("Error generating topics:", error);
-      throw error;
+      throw new Error(`Failed to generate topics: ${error.message}`);
     }
   };
 
@@ -731,10 +694,10 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Validate current step
   const canProceed = () => {
     switch (currentStep) {
-      case 1: // Exam Board
-        return !!formData.examBoard;
-      case 2: // Exam Type
+      case 1: // Exam Type
         return !!formData.examType;
+      case 2: // Exam Board
+        return !!formData.examBoard;
       case 3: // Subject
         return !!(formData.subject || formData.newSubject);
       case 4: // Topic
@@ -993,29 +956,7 @@ Use this format for different question types:
   // Render step content based on current step
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: // Exam Board
-        return (
-          <div className="step-content">
-            <h2>Select Exam Board</h2>
-            <div className="form-group">
-              <select 
-                name="examBoard" 
-                value={formData.examBoard} 
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Select Exam Board --</option>
-                {EXAM_BOARDS.map(board => (
-                  <option key={board.value} value={board.value}>
-                    {board.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        );
-        
-      case 2: // Exam Type
+      case 1: // Exam Type
         return (
           <div className="step-content">
             <h2>Select Exam Type</h2>
@@ -1030,6 +971,28 @@ Use this format for different question types:
                 {EXAM_TYPES.map(type => (
                   <option key={type.value} value={type.value}>
                     {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+        
+      case 2: // Exam Board
+        return (
+          <div className="step-content">
+            <h2>Select Exam Board</h2>
+            <div className="form-group">
+              <select 
+                name="examBoard" 
+                value={formData.examBoard} 
+                onChange={handleChange}
+                required
+              >
+                <option value="">-- Select Exam Board --</option>
+                {EXAM_BOARDS.map(board => (
+                  <option key={board.value} value={board.value}>
+                    {board.label}
                   </option>
                 ))}
               </select>
@@ -1184,73 +1147,11 @@ Use this format for different question types:
           </div>
         );
         
-      case 7: // Preview Generated Cards
-        return (
-          <div className="step-content">
-            <h2>Generated Flashcards</h2>
-            
-            {error && (
-              <div className="error-message">
-                <p>{error}</p>
-                <button onClick={handleRegenerateCards}>Try Again</button>
-              </div>
-            )}
-            
-            {isGenerating ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Generating your flashcards...</p>
-              </div>
-            ) : (
-              <>
-                <div className="preview-controls">
-                  <button 
-                    onClick={handleAddAllCards} 
-                    className="primary-button"
-                    disabled={generatedCards.every(card => card.added)}
-                  >
-                    Add All to Bank
-                  </button>
-                  <button 
-                    onClick={handleRegenerateCards} 
-                    className="secondary-button"
-                  >
-                    Generate New Cards
-                  </button>
-                </div>
-                
-                <div className="cards-preview">
-                  {generatedCards.map(card => (
-                    <div key={card.id} className="preview-card-container">
-                      <Flashcard 
-                        card={card} 
-                        showButtons={false} 
-                      />
-                      
-                      {!card.added && (
-                        <button 
-                          onClick={() => handleAddCard(card)} 
-                          className="add-card-button"
-                        >
-                          Add to Bank
-                        </button>
-                      )}
-                      
-                      {card.added && (
-                        <div className="card-added-overlay">
-                          <span>Added to Bank ✓</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        );
+      case 7: // Confirmation
+        return renderConfirmation();
         
       default:
-        return null;
+        return <div>Unknown step</div>;
     }
   };
 
@@ -1307,6 +1208,85 @@ Use this format for different question types:
             </button>
           </>
         )}
+      </div>
+    );
+  };
+
+  // Effect to update the progress based on steps completed
+  useEffect(() => {
+    // Update progress steps completion status
+    const newCompletedSteps = {};
+    
+    // Mark previous steps as completed
+    for (let i = 1; i < currentStep; i++) {
+      newCompletedSteps[i] = true;
+    }
+    
+    // Check if current step is complete
+    newCompletedSteps[currentStep] = canProceed();
+    
+    setCompletedSteps(newCompletedSteps);
+  }, [currentStep, formData]);
+
+  // Step 7: Confirmation Step
+  const renderConfirmation = () => {
+    return (
+      <div className="step-content confirmation-step">
+        <h2>Confirm Your Selections</h2>
+        
+        <div className="confirmation-details">
+          <div className="confirmation-item">
+            <span className="label">Exam Type:</span>
+            <span className="value">{formData.examType}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Exam Board:</span>
+            <span className="value">{formData.examBoard}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Subject:</span>
+            <span className="value">{formData.newSubject || formData.subject}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Topic:</span>
+            <span className="value">{formData.newTopic || formData.topic}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Number of Cards:</span>
+            <span className="value">{formData.numCards}</span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Question Type:</span>
+            <span className="value">
+              {QUESTION_TYPES.find(t => t.value === formData.questionType)?.label || formData.questionType}
+            </span>
+          </div>
+          
+          <div className="confirmation-item">
+            <span className="label">Card Color:</span>
+            <span className="value color-preview" style={{
+              backgroundColor: formData.subjectColor,
+              color: getContrastColor(formData.subjectColor)
+            }}>
+              {formData.subjectColor}
+            </span>
+          </div>
+        </div>
+        
+        <div className="confirmation-actions">
+          <button 
+            className="generate-button"
+            onClick={generateCards}
+            disabled={isGenerating}
+          >
+            {isGenerating ? "Generating..." : "Generate Cards"}
+          </button>
+        </div>
       </div>
     );
   };
