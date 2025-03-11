@@ -323,7 +323,10 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
           </div>
           
-          <div className="flashcard-back" style={{ color: textColor }}>
+          <div className="flashcard-back" style={{ 
+            color: '#000000', 
+            backgroundColor: '#ffffff' 
+          }}>
             <ScaledText maxFontSize={14}>
               <div dangerouslySetInnerHTML={{ 
                 __html: card.back || 
