@@ -256,7 +256,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
                 <button 
                   className="delete-btn" 
                   onClick={handleDeleteClick}
-                  style={{ color: textColor }}
+                  style={{ color: "red", position: "absolute", bottom: "10px", right: "10px" }}
                 >
                   ✕
                 </button>
@@ -267,15 +267,6 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
                 >
                   🎨
                 </button>
-                {hasAdditionalInfo && (
-                  <button 
-                    className="info-btn" 
-                    onClick={toggleInfoModal}
-                    style={{ color: textColor }}
-                  >
-                    ℹ️
-                  </button>
-                )}
               </>
             )}
             
@@ -298,6 +289,16 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
         
         <div className="flashcard-inner">
           <div className="flashcard-front" style={{ color: textColor }}>
+            {hasAdditionalInfo && (
+              <button 
+                className="info-btn" 
+                onClick={toggleInfoModal}
+                style={{ position: "absolute", top: "5px", left: "5px", zIndex: 10 }}
+              >
+                ℹ️
+              </button>
+            )}
+            
             {isMultipleChoice ? (
               <>
                 <ScaledText className="question-title" maxFontSize={16}>
@@ -310,32 +311,12 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true })
                 <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
               </ScaledText>
             )}
-            
-            {hasAdditionalInfo && (
-              <button 
-                className="info-btn card-front-info" 
-                onClick={toggleInfoModal}
-                style={{ color: textColor }}
-              >
-                ℹ️
-              </button>
-            )}
           </div>
           
           <div className="flashcard-back">
             <ScaledText maxFontSize={14}>
               <div dangerouslySetInnerHTML={{ __html: card.back || card.detailedAnswer || "No answer" }} />
             </ScaledText>
-            
-            {hasAdditionalInfo && (
-              <button 
-                className="info-btn card-back-info" 
-                onClick={toggleInfoModal}
-                style={{ color: textColor }}
-              >
-                ℹ️
-              </button>
-            )}
             
             {card.boxNum !== undefined && (
               <div className="box-indicator">
