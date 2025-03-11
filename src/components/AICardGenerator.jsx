@@ -73,13 +73,30 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       // For demo, we'll use a static mapping
       const examTypeSubjects = {
         "GCSE": [
-          "English Language", "English Literature", "Mathematics", "Combined Science", 
-          "Biology", "Chemistry", "Physics", "History", "Geography", "French", "Spanish"
-        ],
+    "English Language", "English Literature", "Mathematics", "Combined Science", "Double Award Science", "Triple Science",
+    "Biology", "Chemistry", "Physics", "Environmental Science", "Religious Studies", "Citizenship", "Modern Studies",
+    "History", "Geography", "French", "Spanish", "German", "Italian", "Mandarin Chinese", "Welsh", "Latin",
+    "Ancient Greek", "Classical Civilisation", "Art and Design", "Photography", "Design and Technology",
+    "Design and Technology - Product Design", "Design and Technology - Resistant Materials",
+    "Design and Technology - Food Technology", "Design and Technology - Textiles", "Food Preparation and Nutrition",
+    "Music", "Drama", "Dance", "Film Studies", "Computer Science", "Digital Technology", "ICT", "Business Studies",
+    "Economics", "Sociology", "Psychology", "Media Studies", "Physical Education", "Health and Social Care",
+    "Travel and Tourism", "Journalism", "Enterprise/Entrepreneurship", "Electronics", "General Studies", "International Baccalaureate (MYP)"
+  ],
         "A-Level": [
-          "Mathematics", "Further Mathematics", "Physics", "Chemistry", "Biology", 
-          "English Literature", "History", "Geography", "Economics", "Psychology"
-        ]
+    "Mathematics", "Further Mathematics", "Statistics", "Physics", "Chemistry", "Biology", "Combined Science",
+    "Combined Science - Double Award", "Combined Science - Triple Award", "Environmental Science", "Computer Science",
+    "Electronics", "English Language", "English Literature", "History", "Geography", "Religious Studies / Theology",
+    "Philosophy", "Classics", "Classics - Latin", "Classesics - Ancient Greek", "Classesics - Classical Civilisation",
+    "Economics", "Business Studies", "Accounting", "Government and Politics / Politics", "Law", "Psychology",
+    "Sociology", "Media Studies", "French", "Spanish", "German", "Italian", "Mandarin Chinese", "Arabic",
+    "Japanese", "Russian", "Welsh", "Art and Design", "Design and Technology",
+    "Design and Technology - Product Design", "Design and Technology - Textiles",
+    "Design and Technology - Resistant Materials", "Design and Technology - Systems and Control",
+    "Drama and Theatre Studies", "Film Studies", "Music", "Music Technology", "Dance", "Photography",
+    "Fashion", "Physical Education (PE)", "Sport Science", "Health and Social Care (availability varies)",
+    "ICT / Information and Communication Technology","International Baccalaureate (DP)"
+  ]
       };
       
       setAvailableSubjects(examTypeSubjects[formData.examType] || []);
