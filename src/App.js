@@ -7,6 +7,7 @@ import CardCreator from "./components/CardCreator";
 import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
+import AICardGenerator from './components/AICardGenerator';
 
 function App() {
   // Authentication and user state
