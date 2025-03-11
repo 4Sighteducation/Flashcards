@@ -57,6 +57,26 @@ function App() {
     setTimeout(() => setStatusMessage(""), duration);
   }, []);
 
+  // Update spaced repetition data
+  const updateSpacedRepetitionData = useCallback((cards) => {
+    const newSpacedRepetitionData = {
+      box1: [],
+      box2: [],
+      box3: [],
+      box4: [],
+      box5: [],
+    };
+
+    cards.forEach((card) => {
+      const boxNum = card.boxNum || 1;
+      if (boxNum >= 1 && boxNum <= 5) {
+        newSpacedRepetitionData[`box${boxNum}`].push(card.id);
+      }
+    });
+
+    setSpacedRepetitionData(newSpacedRepetitionData);
+  }, []);
+
   // Load data from localStorage fallback
   const loadFromLocalStorage = useCallback(() => {
     try {
@@ -82,7 +102,7 @@ function App() {
     } catch (error) {
       console.error("Error loading from localStorage:", error);
     }
-  }, [updateSpacedRepetitionData]);
+  }, [updateSpacedRepetitionData, setAllCards, setSubjectColorMapping, setSpacedRepetitionData]);
 
   // Save data to localStorage fallback
   const saveToLocalStorage = useCallback(() => {
@@ -255,124 +275,6 @@ function App() {
     [saveData]
   );
 
-  // Organize cards into boxes for spaced repetition
-  const updateSpacedRepetitionData = useCallback((cards) => {
-    const newData = {
-      box1: cards.filter((card) => card.boxNum === 1),
-      box2: cards.filter((card) => card.boxNum === 2),
-      box3: cards.filter((card) => card.boxNum === 3),
-      box4: cards.filter((card) => card.boxNum === 4),
-      box5: cards.filter((card) => card.boxNum === 5),
-    };
-
-    setSpacedRepetitionData(newData);
-  }, []);
-
-  // Initialize communication with parent window (Knack)
-  useEffect(() => {
-    const handleMessage = (event) => {
-      console.log("Message received from parent:", event.data);
-
-      if (event.data && event.data.type) {
-        switch (event.data.type) {
-          case "KNACK_USER_INFO":
-            console.log("Received user info from Knack", event.data.data);
-            setAuth(event.data.data);
-
-            // If user data was included, process it
-            if (event.data.data?.userData) {
-              const userData = event.data.data.userData;
-
-              // Process cards
-              if (userData.cards && Array.isArray(userData.cards)) {
-                setAllCards(userData.cards);
-                updateSpacedRepetitionData(userData.cards);
-              }
-
-              // Process color mapping
-              if (userData.colorMapping) {
-                setSubjectColorMapping(userData.colorMapping);
-              }
-
-              // Process spaced repetition data if separate
-              if (userData.spacedRepetition) {
-                setSpacedRepetitionData(userData.spacedRepetition);
-              }
-            } else {
-              // If no user data was provided, load from localStorage as fallback
-              loadFromLocalStorage();
-            }
-
-            setLoading(false);
-
-            // Confirm receipt of auth info
-            if (window.parent !== window) {
-              window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
-            }
-            break;
-
-          case "SAVE_RESULT":
-            setIsSaving(false);
-            showStatus(
-              event.data.success ? "Saved successfully!" : "Error saving data"
-            );
-            break;
-
-          case "LOAD_SAVED_DATA":
-            console.log("Received updated data from Knack", event.data.data);
-
-            if (event.data.data) {
-              // Process cards
-              if (
-                event.data.data.cards &&
-                Array.isArray(event.data.data.cards)
-              ) {
-                setAllCards(event.data.data.cards);
-                updateSpacedRepetitionData(event.data.data.cards);
-              }
-
-              // Process color mapping
-              if (event.data.data.colorMapping) {
-                setSubjectColorMapping(event.data.data.colorMapping);
-              }
-
-              // Process spaced repetition data if separate
-              if (event.data.data.spacedRepetition) {
-                setSpacedRepetitionData(event.data.data.spacedRepetition);
-              }
-            }
-
-            showStatus("Updated with latest data from server");
-            break;
-        }
-      }
-    };
-
-    // Set up message listener for communication with the parent window
-    window.addEventListener("message", handleMessage);
-
-    // Signal to parent that we're ready for auth info
-    if (window.parent !== window) {
-      console.log("App loaded - sending ready message to parent");
-      window.parent.postMessage({ type: "APP_READY" }, "*");
-    } else {
-      // For standalone testing without Knack
-      console.log("App running in standalone mode - using local storage");
-      setAuth({
-        id: "test-user",
-        email: "test@example.com",
-        name: "Test User",
-      });
-      loadFromLocalStorage();
-      setLoading(false);
-    }
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage]);
-
   // Get cards for the current box in spaced repetition mode
   const getCardsForCurrentBox = useCallback(() => {
     switch (currentBox) {
@@ -502,6 +404,111 @@ function App() {
 
     return () => clearInterval(intervalId);
   }, [auth, allCards, saveData]);
+
+  // Initialize communication with parent window (Knack)
+  useEffect(() => {
+    const handleMessage = (event) => {
+      console.log("Message received from parent:", event.data);
+
+      if (event.data && event.data.type) {
+        switch (event.data.type) {
+          case "KNACK_USER_INFO":
+            console.log("Received user info from Knack", event.data.data);
+            setAuth(event.data.data);
+
+            // If user data was included, process it
+            if (event.data.data?.userData) {
+              const userData = event.data.data.userData;
+
+              // Process cards
+              if (userData.cards && Array.isArray(userData.cards)) {
+                setAllCards(userData.cards);
+                updateSpacedRepetitionData(userData.cards);
+              }
+
+              // Process color mapping
+              if (userData.colorMapping) {
+                setSubjectColorMapping(userData.colorMapping);
+              }
+
+              // Process spaced repetition data if separate
+              if (userData.spacedRepetition) {
+                setSpacedRepetitionData(userData.spacedRepetition);
+              }
+            } else {
+              // If no user data was provided, load from localStorage as fallback
+              loadFromLocalStorage();
+            }
+
+            setLoading(false);
+
+            // Confirm receipt of auth info
+            if (window.parent !== window) {
+              window.parent.postMessage({ type: "AUTH_CONFIRMED" }, "*");
+            }
+            break;
+
+          case "SAVE_RESULT":
+            setIsSaving(false);
+            showStatus(
+              event.data.success ? "Saved successfully!" : "Error saving data"
+            );
+            break;
+
+          case "LOAD_SAVED_DATA":
+            console.log("Received updated data from Knack", event.data.data);
+
+            if (event.data.data) {
+              // Process cards
+              if (
+                event.data.data.cards &&
+                Array.isArray(event.data.data.cards)
+              ) {
+                setAllCards(event.data.data.cards);
+                updateSpacedRepetitionData(event.data.data.cards);
+              }
+
+              // Process color mapping
+              if (event.data.data.colorMapping) {
+                setSubjectColorMapping(event.data.data.colorMapping);
+              }
+
+              // Process spaced repetition data if separate
+              if (event.data.data.spacedRepetition) {
+                setSpacedRepetitionData(event.data.data.spacedRepetition);
+              }
+            }
+
+            showStatus("Updated with latest data from server");
+            break;
+        }
+      }
+    };
+
+    // Set up message listener for communication with the parent window
+    window.addEventListener("message", handleMessage);
+
+    // Signal to parent that we're ready for auth info
+    if (window.parent !== window) {
+      console.log("App loaded - sending ready message to parent");
+      window.parent.postMessage({ type: "APP_READY" }, "*");
+    } else {
+      // For standalone testing without Knack
+      console.log("App running in standalone mode - using local storage");
+      setAuth({
+        id: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+      });
+      loadFromLocalStorage();
+      setLoading(false);
+    }
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage]);
 
   // Show loading state
   if (loading) {
