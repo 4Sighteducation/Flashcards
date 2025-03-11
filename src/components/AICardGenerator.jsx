@@ -62,9 +62,27 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
   const [availableTopics, setAvailableTopics] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   
+  // New state for hierarchical topics
+  const [hierarchicalTopics, setHierarchicalTopics] = useState([]);
+  const [savedTopicLists, setSavedTopicLists] = useState([]);
+  const [showSaveTopicDialog, setShowSaveTopicDialog] = useState(false);
+  const [topicListName, setTopicListName] = useState("");
+  
   // API key - in production, this should be in a server environment variable
   // For demo purposes, we're using a placeholder. In a real app, you would get this from your backend.
   const API_KEY = process.env.REACT_APP_OPENAI_KEY || "your-openai-key";
+
+  // Load saved topic lists from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedLists = localStorage.getItem('savedTopicLists');
+      if (savedLists) {
+        setSavedTopicLists(JSON.parse(savedLists));
+      }
+    } catch (error) {
+      console.error("Error loading saved topic lists:", error);
+    }
+  }, []);
 
   // Effect to update available subjects when exam type changes
   useEffect(() => {
@@ -136,12 +154,30 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
   // Generate topics using OpenAI API
   const generateTopics = async (examBoard, examType, subject) => {
     try {
-      // Create prompt for topic generation
-      const prompt = `Generate a list of 10-15 specific, real-world topics for ${examBoard} ${examType} ${subject}. 
+      // Create prompt for topic generation with hierarchical structure
+      const prompt = `Generate a list of 8-10 specific, real-world topics for ${examBoard} ${examType} ${subject}. 
       These should be actual curriculum topics in this exact subject according to this exam board's specification. 
       Be specific and detailed - for example, if the subject is Chemistry, don't just say "Organic Chemistry" but specific topics like "Addition Reactions of Alkenes" or "Mechanisms of Nucleophilic Substitution".
-      Additionally, include a short description for each topic from the curriculum to help the user understand what it covers.
-      Return ONLY a valid JSON array of objects with the format: [{"topic": "Topic Name", "description": "Brief description of what this topic covers"}]`;
+      
+      Each topic should include:
+      1. A main topic name
+      2. A short description of what this topic covers (2-3 sentences)
+      3. 3-5 sub-topics that are specific components or concepts within the main topic
+      
+      For example, in Chemistry, a topic might be "Organic Reaction Mechanisms" with sub-topics like "Nucleophilic Substitution", "Electrophilic Addition", etc.
+      
+      Focus on differentiation between ${examType} levels, ensuring appropriate complexity.
+      
+      Return ONLY a valid JSON array of objects with the format: 
+      [
+        {
+          "topic": "Main Topic Name", 
+          "description": "Description of what this topic covers in 2-3 sentences.",
+          "subTopics": ["Sub-topic 1", "Sub-topic 2", "Sub-topic 3", "Sub-topic 4"]
+        }
+      ]
+      
+      IMPORTANT: Be sure to get the curriculum content right by web searching for the latest ${examBoard} ${examType} ${subject} specification if you're not sure.`;
       
       console.log("Generating topics with prompt:", prompt);
       
@@ -155,7 +191,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
         body: JSON.stringify({
           model: "gpt-4o",
           messages: [{ role: "user", content: prompt }],
-          max_tokens: 1000,
+          max_tokens: 1500,
           temperature: 0.3
         })
       });
@@ -168,19 +204,25 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
       
       // Parse the response
       const content = data.choices[0].message.content;
+      console.log("Raw response:", content);
       const cleanedContent = cleanOpenAIResponse(content);
       
       let topicsData;
       try {
         topicsData = JSON.parse(cleanedContent);
+        console.log("Parsed topics data:", topicsData);
       } catch (e) {
         console.error("Error parsing OpenAI response for topics:", e);
+        console.error("Cleaned content:", cleanedContent);
         throw new Error("Failed to parse AI response for topics. Please try again.");
       }
       
       if (!Array.isArray(topicsData) || topicsData.length === 0) {
         throw new Error("Invalid response format from AI for topics. Please try again.");
       }
+      
+      // Store the hierarchical topics
+      setHierarchicalTopics(topicsData);
       
       // Extract just the topic names for the dropdown
       const topics = topicsData.map(item => item.topic || "");
@@ -190,6 +232,86 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [] }) => {
     } catch (error) {
       console.error("Error generating topics:", error);
       throw error;
+    }
+  };
+
+  // Save the current topic list
+  const saveTopicList = () => {
+    if (!topicListName.trim()) {
+      setError("Please enter a name for your topic list");
+      return;
+    }
+    
+    try {
+      const newSavedList = {
+        id: Date.now(),
+        name: topicListName,
+        examBoard: formData.examBoard,
+        examType: formData.examType,
+        subject: formData.subject || formData.newSubject,
+        topics: hierarchicalTopics,
+        created: new Date().toISOString()
+      };
+      
+      const updatedLists = [...savedTopicLists, newSavedList];
+      setSavedTopicLists(updatedLists);
+      
+      // Save to localStorage
+      localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
+      
+      // Reset dialog
+      setShowSaveTopicDialog(false);
+      setTopicListName("");
+      setError(null);
+      
+      console.log("Topic list saved:", newSavedList);
+    } catch (error) {
+      console.error("Error saving topic list:", error);
+      setError("Failed to save topic list: " + error.message);
+    }
+  };
+  
+  // Load a saved topic list
+  const loadTopicList = (listId) => {
+    try {
+      const list = savedTopicLists.find(list => list.id === listId);
+      if (!list) {
+        setError("Topic list not found");
+        return;
+      }
+      
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        examBoard: list.examBoard,
+        examType: list.examType,
+        subject: list.subject
+      }));
+      
+      // Set topics
+      setHierarchicalTopics(list.topics);
+      setAvailableTopics(list.topics.map(item => item.topic));
+      
+      console.log("Loaded topic list:", list);
+    } catch (error) {
+      console.error("Error loading topic list:", error);
+      setError("Failed to load topic list: " + error.message);
+    }
+  };
+  
+  // Delete a saved topic list
+  const deleteTopicList = (listId) => {
+    try {
+      const updatedLists = savedTopicLists.filter(list => list.id !== listId);
+      setSavedTopicLists(updatedLists);
+      
+      // Save to localStorage
+      localStorage.setItem('savedTopicLists', JSON.stringify(updatedLists));
+      
+      console.log("Topic list deleted, id:", listId);
+    } catch (error) {
+      console.error("Error deleting topic list:", error);
+      setError("Failed to delete topic list: " + error.message);
     }
   };
 
@@ -564,44 +686,79 @@ Use this format for different question types:
       case 4: // Topic
         return (
           <div className="step-content">
-            <h2>Select Topic</h2>
+            <h2>Select a Topic</h2>
+            
+            {/* Saved topic lists */}
+            {renderSavedTopicLists()}
+            
             <div className="form-group">
+              <label>Topic</label>
               {isGenerating ? (
-                <div className="loading-topics">
+                <div className="loading-indicator">
+                  <p>Generating topics for {formData.subject}...</p>
                   <div className="spinner"></div>
-                  <p>Loading topics...</p>
                 </div>
               ) : (
                 <>
-                  <select 
-                    name="topic" 
-                    value={formData.topic} 
-                    onChange={handleChange}
-                    disabled={availableTopics.length === 0}
+                  {availableTopics.length > 0 ? (
+                    <select
+                      name="topic"
+                      value={formData.topic}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select a Topic</option>
+                      {availableTopics.map((topic) => (
+                        <option key={topic} value={topic}>
+                          {topic}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="no-topics-message">
+                      <p>No topics generated yet. Click "Generate Topics" to continue.</p>
+                    </div>
+                  )}
+                  
+                  <button
+                    className="generate-button"
+                    onClick={async () => {
+                      try {
+                        setIsGenerating(true);
+                        setError(null);
+                        const topics = await generateTopics(
+                          formData.examBoard,
+                          formData.examType,
+                          formData.subject || formData.newSubject
+                        );
+                        setAvailableTopics(topics);
+                      } catch (err) {
+                        setError(err.message);
+                      } finally {
+                        setIsGenerating(false);
+                      }
+                    }}
                   >
-                    <option value="">-- Select Topic --</option>
-                    {availableTopics.map(topic => (
-                      <option key={topic} value={topic}>
-                        {topic}
-                      </option>
-                    ))}
-                  </select>
+                    Generate Topics
+                  </button>
                   
-                  <div className="form-divider">
-                    <span>OR</span>
-                  </div>
-                  
-                  <label>Enter New Topic</label>
-                  <input 
-                    type="text" 
-                    name="newTopic" 
-                    value={formData.newTopic} 
-                    onChange={handleChange}
-                    placeholder="Enter custom topic name"
-                  />
+                  {/* Display hierarchical topics */}
+                  {renderHierarchicalTopics()}
                 </>
               )}
             </div>
+            
+            <div className="form-group">
+              <label>Or Add New Topic</label>
+              <input
+                type="text"
+                name="newTopic"
+                value={formData.newTopic}
+                onChange={handleChange}
+                placeholder="Enter a new topic name"
+              />
+            </div>
+            
+            {error && <div className="error-message">{error}</div>}
           </div>
         );
         
@@ -759,11 +916,120 @@ Use this format for different question types:
     }
   };
 
+  // Render saved topic lists
+  const renderSavedTopicLists = () => {
+    if (savedTopicLists.length === 0) {
+      return (
+        <div className="no-saved-topics">
+          <p>No saved topic lists yet</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="saved-topic-lists">
+        <h3>Saved Topic Lists</h3>
+        <div className="topic-list-grid">
+          {savedTopicLists.map(list => (
+            <div key={list.id} className="topic-list-card">
+              <h4>{list.name}</h4>
+              <div className="topic-list-details">
+                <p><strong>Exam:</strong> {list.examBoard} {list.examType}</p>
+                <p><strong>Subject:</strong> {list.subject}</p>
+                <p><strong>Topics:</strong> {list.topics.length}</p>
+                <p className="created-date">Created: {new Date(list.created).toLocaleDateString()}</p>
+              </div>
+              <div className="topic-list-actions">
+                <button onClick={() => loadTopicList(list.id)}>Load</button>
+                <button className="delete-button" onClick={() => deleteTopicList(list.id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render hierarchical topics
+  const renderHierarchicalTopics = () => {
+    if (hierarchicalTopics.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="hierarchical-topics">
+        <div className="topics-header">
+          <h3>Generated Topics</h3>
+          <div className="topic-actions">
+            <button 
+              className="save-topics-button"
+              onClick={() => setShowSaveTopicDialog(true)}
+            >
+              Save Topic List
+            </button>
+          </div>
+        </div>
+        
+        <div className="topics-list">
+          {hierarchicalTopics.map((topicData, index) => (
+            <div key={index} className="topic-card">
+              <h4>{topicData.topic}</h4>
+              <p className="topic-description">{topicData.description}</p>
+              {topicData.subTopics && topicData.subTopics.length > 0 && (
+                <div className="sub-topics">
+                  <h5>Sub-topics:</h5>
+                  <ul>
+                    {topicData.subTopics.map((subTopic, subIndex) => (
+                      <li key={subIndex}>{subTopic}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render topic save dialog
+  const renderSaveTopicDialog = () => {
+    if (!showSaveTopicDialog) {
+      return null;
+    }
+    
+    return (
+      <div className="save-topic-overlay">
+        <div className="save-topic-dialog">
+          <h3>Save Topic List</h3>
+          <div className="form-group">
+            <label>Name</label>
+            <input 
+              type="text" 
+              value={topicListName} 
+              onChange={(e) => setTopicListName(e.target.value)}
+              placeholder="Enter a name for this topic list"
+            />
+          </div>
+          {error && <div className="error-message">{error}</div>}
+          <div className="dialog-actions">
+            <button className="cancel-button" onClick={() => setShowSaveTopicDialog(false)}>Cancel</button>
+            <button className="save-button" onClick={saveTopicList}>Save</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="ai-card-generator">
+      {renderSaveTopicDialog()}
+      
       <div className="generator-header">
-        <h1>AI Flashcard Generator</h1>
-        <button onClick={onClose} className="close-button">×</button>
+        <h1>AI Card Generator</h1>
+        <button className="close-button" onClick={onClose}>
+          &times;
+        </button>
       </div>
       
       <div className="progress-bar">

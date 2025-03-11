@@ -21,6 +21,11 @@ const SpacedRepetition = ({
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [filteredCards, setFilteredCards] = useState([]);
+  
+  // Add new state for multiple choice selection
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
 
   // Group cards by subject and topic
   useEffect(() => {
@@ -239,13 +244,40 @@ const SpacedRepetition = ({
         <h4>Options:</h4>
         <ul>
           {card.options.map((option, index) => (
-            <li key={index} className={isFlipped && option === card.correctAnswer ? "correct-option" : ""}>
+            <li 
+              key={index} 
+              className={`
+                ${isFlipped && option === card.correctAnswer ? "correct-option" : ""}
+                ${selectedOption === option ? "selected-option" : ""}
+              `}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card flip when clicking option
+                if (!isFlipped) {
+                  handleOptionClick(option, card);
+                }
+              }}
+            >
               {option}
             </li>
           ))}
         </ul>
       </div>
     );
+  };
+  
+  // New function to handle clicking on a multiple choice option
+  const handleOptionClick = (option, card) => {
+    setSelectedOption(option);
+    setIsFlipped(true);
+    
+    // Check if selected option is correct
+    const isCorrect = option === card.correctAnswer;
+    setIsCorrectAnswer(isCorrect);
+    
+    // Show feedback after a short delay
+    setTimeout(() => {
+      setShowAnswerFeedback(true);
+    }, 500);
   };
 
   // Render the study interface
@@ -355,6 +387,7 @@ const SpacedRepetition = ({
                       "No answer"
                   }}
                 />
+                {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               </div>
             </div>
           </div>
@@ -383,7 +416,8 @@ const SpacedRepetition = ({
             </button>
           </div>
 
-          {showFlipResponse && (
+          {/* Render different feedback based on question type */}
+          {showFlipResponse && !showAnswerFeedback && currentCards[currentIndex].questionType !== 'multiple_choice' && (
             <div className="flip-response">
               <p>Did you know the answer?</p>
               <div className="response-buttons">
@@ -395,6 +429,35 @@ const SpacedRepetition = ({
                   onClick={handleIncorrectAnswer}
                 >
                   Incorrect
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Show feedback for multiple choice answers */}
+          {showAnswerFeedback && currentCards[currentIndex].questionType === 'multiple_choice' && (
+            <div className={`answer-feedback ${isCorrectAnswer ? 'correct' : 'incorrect'}`}>
+              <h3>{isCorrectAnswer ? 'Congratulations!' : 'Unlucky!'}</h3>
+              <p>
+                {isCorrectAnswer 
+                  ? `You got that right! Moving up to Box ${Math.min(currentBox + 1, 5)}.` 
+                  : `That's incorrect. The correct answer is: ${currentCards[currentIndex].correctAnswer}`}
+              </p>
+              <div className="feedback-buttons">
+                <button 
+                  className={isCorrectAnswer ? "correct-button" : "incorrect-button"} 
+                  onClick={() => {
+                    // Reset state and process card movement
+                    if (isCorrectAnswer) {
+                      handleCorrectAnswer();
+                    } else {
+                      handleIncorrectAnswer();
+                    }
+                    setSelectedOption(null);
+                    setShowAnswerFeedback(false);
+                  }}
+                >
+                  {isCorrectAnswer ? "Continue" : "Move to Box 1"}
                 </button>
               </div>
             </div>

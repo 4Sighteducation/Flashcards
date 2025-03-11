@@ -670,6 +670,7 @@ function App() {
                 getColorForSubject={(subject) =>
                   getColorForSubjectTopic(subject)
                 }
+                updateColorMapping={updateColorMapping}
               />
 
               {selectedSubject && (

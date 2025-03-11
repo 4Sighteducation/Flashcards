@@ -350,37 +350,127 @@
 
 /* Multiple choice formatting */
 .multiple-choice-options {
+  margin-top: 15px;
   width: 100%;
-  margin-top: 20px;
-  text-align: left;
 }
 
 .multiple-choice-options h4 {
-  margin-bottom: 10px;
-  color: #555;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
 }
 
 .multiple-choice-options ul {
   list-style-type: none;
-  padding-left: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .multiple-choice-options li {
   padding: 10px 15px;
-  margin-bottom: 8px;
-  background-color: rgba(255, 255, 255, 0.5);
+  margin: 8px 0;
   border-radius: 8px;
-  transition: background-color 0.2s;
-  font-size: 1.2rem;
+  background-color: #f5f5f5;
+  border: 2px solid #e0e0e0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .multiple-choice-options li:hover {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: #e8f4fc;
+  border-color: #a0d2f3;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
 }
 
 .multiple-choice-options li.correct-option {
-  background-color: rgba(76, 175, 80, 0.3);
-  border-left: 4px solid #4caf50;
+  background-color: #dff0d8;
+  border-color: #5cb85c;
+  color: #3c763d;
+  font-weight: 600;
+}
+
+.multiple-choice-options li.selected-option {
+  background-color: #e8f4fc;
+  border-color: #4a90e2;
+  font-weight: 600;
+}
+
+/* Answer feedback styles */
+.answer-feedback {
+  margin-top: 20px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.answer-feedback.correct {
+  background-color: #dff0d8;
+  border: 2px solid #5cb85c;
+}
+
+.answer-feedback.incorrect {
+  background-color: #f2dede;
+  border: 2px solid #d9534f;
+}
+
+.answer-feedback h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.answer-feedback p {
+  margin-bottom: 15px;
+  font-size: 1rem;
+}
+
+.feedback-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.feedback-buttons button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.feedback-buttons button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+/* Make sure multiple choice options don't interfere with flipping */
+.card-front .multiple-choice-options li {
+  pointer-events: auto;
+}
+
+.card-back .multiple-choice-options li {
+  cursor: default;
+}
+
+.card-back .multiple-choice-options li:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Animation for the feedback panel */
+@keyframes feedbackFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.answer-feedback {
+  animation: feedbackFadeIn 0.3s ease-out;
 }
 
 /* Media queries for responsiveness */
