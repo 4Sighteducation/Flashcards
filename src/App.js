@@ -53,6 +53,9 @@ function App() {
     box5: [],
   });
 
+  // User-specific topics
+  const [userTopics, setUserTopics] = useState({});
+
   // Status messages
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -207,11 +210,12 @@ function App() {
       localStorage.setItem('flashcards', JSON.stringify(allCards));
       localStorage.setItem('colorMapping', JSON.stringify(subjectColorMapping));
       localStorage.setItem('spacedRepetition', JSON.stringify(spacedRepetitionData));
+      localStorage.setItem('userTopics', JSON.stringify(userTopics));
       console.log("Saved data to localStorage");
     } catch (error) {
       console.error("Error saving to localStorage:", error);
     }
-  }, [allCards, subjectColorMapping, spacedRepetitionData]);
+  }, [allCards, subjectColorMapping, spacedRepetitionData, userTopics]);
 
   // Save data to Knack - depends on saveToLocalStorage and showStatus
   const saveData = useCallback(() => {
@@ -230,6 +234,7 @@ function App() {
               cards: allCards,
               colorMapping: subjectColorMapping,
               spacedRepetition: spacedRepetitionData,
+              userTopics: userTopics,
             },
           },
           "*"
@@ -251,7 +256,7 @@ function App() {
       setIsSaving(false);
       showStatus("Error saving data");
     }
-  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, showStatus, saveToLocalStorage, recordId]);
+  }, [auth, allCards, subjectColorMapping, spacedRepetitionData, userTopics, showStatus, saveToLocalStorage, recordId]);
 
   // Cards and data operations - these depend on the above functions
   // Load data from localStorage fallback
@@ -260,6 +265,7 @@ function App() {
       const savedCards = localStorage.getItem('flashcards');
       const savedColorMapping = localStorage.getItem('colorMapping');
       const savedSpacedRepetition = localStorage.getItem('spacedRepetition');
+      const savedUserTopics = localStorage.getItem('userTopics');
       
       if (savedCards) {
         const parsedCards = JSON.parse(savedCards);
@@ -273,6 +279,10 @@ function App() {
       
       if (savedSpacedRepetition) {
         setSpacedRepetitionData(JSON.parse(savedSpacedRepetition));
+      }
+      
+      if (savedUserTopics) {
+        setUserTopics(JSON.parse(savedUserTopics));
       }
       
       console.log("Loaded data from localStorage");
@@ -703,6 +713,11 @@ function App() {
               if (userData.spacedRepetition) {
                 setSpacedRepetitionData(userData.spacedRepetition);
               }
+              
+              // Process user topics if available
+              if (userData.userTopics) {
+                setUserTopics(userData.userTopics);
+              }
             } else {
               // If no user data was provided, load from localStorage as fallback
               loadFromLocalStorage();
@@ -745,6 +760,11 @@ function App() {
               if (event.data.data.spacedRepetition) {
                 setSpacedRepetitionData(event.data.data.spacedRepetition);
               }
+              
+              // Process user topics if available
+              if (event.data.data.userTopics) {
+                setUserTopics(event.data.data.userTopics);
+              }
             }
 
             showStatus("Updated with latest data from server");
@@ -777,6 +797,41 @@ function App() {
       window.removeEventListener("message", handleMessage);
     };
   }, [updateSpacedRepetitionData, showStatus, loadFromLocalStorage]);
+
+  // Function to extract user-specific topics for a subject
+  const getUserTopicsForSubject = useCallback(
+    (subject) => {
+      if (!subject || !auth) return [];
+      
+      // First check if we have user-specific topics
+      if (userTopics && userTopics[subject] && Array.isArray(userTopics[subject])) {
+        return userTopics[subject].sort();
+      }
+      
+      // Fall back to extracting from cards if no user topics
+      return getTopicsForSubject(subject);
+    },
+    [userTopics, auth, getTopicsForSubject]
+  );
+  
+  // Function to update user topics for a specific subject
+  const updateUserTopicsForSubject = useCallback(
+    (subject, topics) => {
+      if (!subject || !auth) return;
+      
+      setUserTopics(prevTopics => {
+        const newTopics = { ...prevTopics };
+        newTopics[subject] = topics;
+        return newTopics;
+      });
+      
+      // Save changes
+      setTimeout(() => {
+        saveData();
+      }, 500);
+    },
+    [auth, saveData]
+  );
 
   // Show loading state
   if (loading) {
@@ -837,12 +892,13 @@ function App() {
 
               {selectedSubject && (
                 <TopicsList
-                  topics={getTopicsForSubject(selectedSubject)}
+                  topics={getUserTopicsForSubject(selectedSubject)}
                   selectedTopic={selectedTopic}
                   onSelectTopic={setSelectedTopic}
                   getColorForTopic={(topic) =>
                     getColorForSubjectTopic(selectedSubject, topic)
                   }
+                  updateTopics={(topics) => updateUserTopicsForSubject(selectedSubject, topics)}
                 />
               )}
             </div>
@@ -859,45 +915,27 @@ function App() {
       )}
 
       {view === "createCard" && (
-  <>
-    <div className="create-card-options">
-      <button 
-        className="primary-button"
-        onClick={() => setView("aiGenerator")}
-      >
-        Generate Cards with AI
-      </button>
-      <span className="or-divider">OR</span>
-      <button 
-        className="secondary-button"
-        onClick={() => setView("manualCreate")}
-      >
-        Create Cards Manually
-      </button>
-    </div>
-  </>
-)}
+        <div className="create-card-container">
+          <CardCreator
+            onAddCard={addCard}
+            onCancel={() => setView("cardBank")}
+            subjects={getSubjects()}
+            getTopicsForSubject={getUserTopicsForSubject}
+            currentColor={currentSubjectColor}
+            onColorChange={setCurrentSubjectColor}
+            getColorForSubjectTopic={getColorForSubjectTopic}
+            updateColorMapping={updateColorMapping}
+          />
+        </div>
+      )}
 
-{view === "aiGenerator" && (
-  <AICardGenerator
-    onAddCard={addCard}
-    onClose={() => setView("cardBank")}
-    subjects={getSubjects()}
-  />
-)}
-
-{view === "manualCreate" && (
-  <CardCreator
-    onAddCard={addCard}
-    onCancel={() => setView("cardBank")}
-    subjects={getSubjects()}
-    getTopicsForSubject={getTopicsForSubject}
-    currentColor={currentSubjectColor}
-    onColorChange={setCurrentSubjectColor}
-    getColorForSubjectTopic={getColorForSubjectTopic}
-    updateColorMapping={updateColorMapping}
-  />
-)}
+      {view === "aiGenerator" && (
+        <AICardGenerator
+          onAddCard={addCard}
+          onClose={() => setView("cardBank")}
+          subjects={getSubjects()}
+        />
+      )}
 
       {view === "spacedRepetition" && (
         <SpacedRepetition
