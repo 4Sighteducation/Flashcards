@@ -699,6 +699,11 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // Handle next step in wizard
   const handleNextStep = () => {
     if (currentStep < totalSteps) {
+      // If we're moving from step 6 (question type) to step 7 (confirmation),
+      // set isGenerating to true to show the loading screen immediately
+      if (currentStep === 6) {
+        setIsGenerating(true);
+      }
       setCurrentStep(currentStep + 1);
     }
   };
@@ -888,11 +893,22 @@ Use this format for different question types:
         // Generate a unique ID
         const id = `card_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
         
+        // Log metadata for debugging
+        console.log(`Generating card #${index + 1} with metadata:`, {
+          subject: finalSubject,
+          topic: finalTopic,
+          examType: formData.examType,
+          examBoard: formData.examBoard,
+          color: cardColor
+        });
+        
         // Add standard fields
         const baseCard = {
           id,
           subject: finalSubject,
           topic: finalTopic,
+          examType: formData.examType,
+          examBoard: formData.examBoard,
           questionType: formData.questionType,
           cardColor: cardColor,
           baseColor: cardColor,
@@ -987,7 +1003,7 @@ Use this format for different question types:
 
   // Call to generate cards when arriving at the final step
   useEffect(() => {
-    if (currentStep === 6 && generatedCards.length === 0 && !isGenerating) {
+    if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
       generateCards();
     }
   }, [currentStep]);

@@ -252,7 +252,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         console.log(`Rendering ${subject} with type=${examType}, board=${examBoard}`);
         
         return (
-          <div key={subject} className="subject-column">
+          <div key={subject} className="subject-container">
             <div 
               className="subject-header"
               style={{ 
