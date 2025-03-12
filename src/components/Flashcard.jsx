@@ -172,8 +172,17 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   
   // Handle card flipping
   const handleFlip = (e) => {
-    // Don't flip if clicking on buttons
-    if (e.target.closest('.card-controls') || e.target.closest('.color-picker-container') || e.target.closest('.info-btn')) return;
+    // Don't flip if clicking on buttons or controls
+    if (
+      e.target.closest('.button-container') || 
+      e.target.closest('.delete-confirm') || 
+      e.target.closest('.color-picker-container') || 
+      e.target.closest('.delete-btn') || 
+      e.target.closest('.color-btn') || 
+      e.target.closest('.info-btn')
+    ) {
+      return;
+    }
     
     setIsFlipped(!isFlipped);
     if (onFlip) onFlip(card, !isFlipped);
@@ -248,7 +257,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         style={cardStyle}
       >
         {showButtons && !preview && (
-          <div className="card-controls">
+          <>
             {confirmDelete ? (
               <div className="delete-confirm">
                 <span style={{ color: textColor }}>Delete?</span>
@@ -256,21 +265,33 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <button onClick={cancelDelete} className="cancel-btn">No</button>
               </div>
             ) : (
-              <>
+              <div className="button-container">
                 <button 
                   className="delete-btn" 
                   onClick={handleDeleteClick}
+                  title="Delete card"
                 >
                   ✕
                 </button>
+                
                 <button 
                   className="color-btn" 
                   onClick={toggleColorPicker}
-                  style={{ color: textColor }}
+                  title="Change color"
                 >
                   🎨
                 </button>
-              </>
+                
+                {hasAdditionalInfo && (
+                  <button 
+                    className="info-btn" 
+                    onClick={toggleInfoModal}
+                    title="View additional information"
+                  >
+                    ℹ️
+                  </button>
+                )}
+              </div>
             )}
             
             {showColorPicker && (
@@ -287,7 +308,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
         
         <div className="flashcard-inner">
