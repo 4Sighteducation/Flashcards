@@ -123,22 +123,35 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         if (cards.length > 0) {
           const firstCard = cards[0];
           
-          // Log the complete card to see its structure
-          console.log(`CARD DATA FOR ${subject}:`, firstCard);
+          // Enhanced debugging: Log complete card structure for analysis
+          console.log(`DETAILED CARD DATA FOR "${subject}":`, JSON.stringify(firstCard, null, 2));
           
           // Try to get values directly from the card properties
+          console.log(`Checking fields directly on card:`, {
+            examType: firstCard.examType,
+            courseType: firstCard.courseType,
+            type: firstCard.type,
+            examBoard: firstCard.examBoard,
+            board: firstCard.board
+          });
+          
           if (!examType && firstCard.examType) {
             examType = firstCard.examType;
+            console.log(`Found examType directly on card: ${examType}`);
           } else if (!examType && firstCard.courseType) {
             examType = firstCard.courseType;
+            console.log(`Found courseType directly on card: ${examType}`);
           } else if (!examType && firstCard.type) {
             examType = firstCard.type;
+            console.log(`Found type directly on card: ${examType}`);
           }
           
           if (!examBoard && firstCard.examBoard) {
             examBoard = firstCard.examBoard;
+            console.log(`Found examBoard directly on card: ${examBoard}`);
           } else if (!examBoard && firstCard.board) {
             examBoard = firstCard.board;
+            console.log(`Found board directly on card: ${examBoard}`);
           }
           
           // If we still don't have values, check meta properties if they exist
@@ -146,14 +159,18 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             console.log(`Checking meta data for ${subject}:`, firstCard.meta);
             if (!examType && firstCard.meta.examType) {
               examType = firstCard.meta.examType;
+              console.log(`Found examType in meta: ${examType}`);
             } else if (!examType && firstCard.meta.courseType) {
               examType = firstCard.meta.courseType;
+              console.log(`Found courseType in meta: ${examType}`);
             }
             
             if (!examBoard && firstCard.meta.examBoard) {
               examBoard = firstCard.meta.examBoard;
+              console.log(`Found examBoard in meta: ${examBoard}`);
             } else if (!examBoard && firstCard.meta.board) {
               examBoard = firstCard.meta.board;
+              console.log(`Found board in meta: ${examBoard}`);
             }
           }
         }
@@ -163,7 +180,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
       
-      console.log(`Subject "${subject}" - Extracted: Type=${examType}, Board=${examBoard}`);
+      console.log(`FINAL EXTRACTED FOR "${subject}": Type=${examType}, Board=${examBoard}`);
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);

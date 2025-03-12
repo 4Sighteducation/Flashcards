@@ -701,8 +701,14 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     if (currentStep < totalSteps) {
       // If we're moving from step 6 (question type) to step 7 (confirmation),
       // set isGenerating to true to show the loading screen immediately
+      // AND trigger the card generation
       if (currentStep === 6) {
         setIsGenerating(true);
+        // Move to next step first, then trigger card generation
+        setCurrentStep(currentStep + 1);
+        // Directly call generateCards without waiting for the useEffect
+        setTimeout(() => generateCards(), 100);
+        return; // Exit early since we already set the next step
       }
       setCurrentStep(currentStep + 1);
     }
@@ -737,6 +743,18 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
 
   // Generate cards using OpenAI API
   const generateCards = async () => {
+    console.log("Generate cards function called with state:", { 
+      isGenerating, 
+      currentStep,
+      formData: { 
+        examType: formData.examType,
+        examBoard: formData.examBoard,
+        subject: formData.subject || formData.newSubject,
+        topic: formData.topic || formData.newTopic,
+        questionType: formData.questionType
+      }
+    });
+    
     setIsGenerating(true);
     setError(null);
     
@@ -744,6 +762,16 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       // Determine final subject and topic (use new values if provided)
       const finalSubject = formData.newSubject || formData.subject;
       const finalTopic = formData.newTopic || formData.topic;
+      const finalExamType = formData.examType;
+      const finalExamBoard = formData.examBoard;
+      
+      // Log explicit metadata that will be used
+      console.log("Explicit metadata for cards:", {
+        finalSubject,
+        finalTopic,
+        finalExamType,
+        finalExamBoard
+      });
       
       // Automatically select a color if not already set
       // This can happen if we're coming from a previous step
@@ -897,8 +925,8 @@ Use this format for different question types:
         console.log(`Generating card #${index + 1} with metadata:`, {
           subject: finalSubject,
           topic: finalTopic,
-          examType: formData.examType,
-          examBoard: formData.examBoard,
+          examType: finalExamType,
+          examBoard: finalExamBoard,
           color: cardColor
         });
         
@@ -907,8 +935,8 @@ Use this format for different question types:
           id,
           subject: finalSubject,
           topic: finalTopic,
-          examType: formData.examType,
-          examBoard: formData.examBoard,
+          examType: finalExamType,
+          examBoard: finalExamBoard,
           questionType: formData.questionType,
           cardColor: cardColor,
           baseColor: cardColor,
@@ -991,6 +1019,16 @@ Use this format for different question types:
         }
       });
       
+      // Add debug log of the full processed cards before setting state
+      console.log("FINAL PROCESSED CARDS:", processedCards.map(card => ({
+        id: card.id,
+        subject: card.subject,
+        topic: card.topic,
+        examType: card.examType,
+        examBoard: card.examBoard,
+        questionType: card.questionType,
+      })));
+
       setGeneratedCards(processedCards);
       
     } catch (error) {
@@ -1002,11 +1040,15 @@ Use this format for different question types:
   };
 
   // Call to generate cards when arriving at the final step
+  // This useEffect is now a backup in case the direct call fails
   useEffect(() => {
+    // Only trigger card generation if we're at step 7, we don't have cards yet,
+    // and we're not already generating (to avoid duplicate calls)
     if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
+      console.log("Backup useEffect triggering card generation");
       generateCards();
     }
-  }, [currentStep]);
+  }, [currentStep, generatedCards.length, isGenerating]);
 
   // Helper function to clean AI response
   const cleanOpenAIResponse = (text) => {
