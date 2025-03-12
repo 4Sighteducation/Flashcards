@@ -1166,29 +1166,6 @@ Use this format for different question types:
               {renderTopicSelectionUI()}
             </div>
             
-            <div className="form-group">
-              <label>Or Add New Topic</label>
-              <input
-                type="text"
-                name="newTopic"
-                value={formData.newTopic}
-                onChange={handleChange}
-                placeholder="Enter a new topic"
-              />
-            </div>
-            
-            {/* Button to generate topics */}
-            <div className="form-group">
-              <button 
-                className="generate-topics-main-button"
-                onClick={handleGenerateTopics}
-                disabled={isGenerating || !(formData.subject || formData.newSubject)}
-              >
-                {isGenerating ? "Generating..." : "Generate Topics"}
-              </button>
-              {error && <div className="error-message">{error}</div>}
-            </div>
-            
             {/* Saved topic lists shown below */}
             {renderSavedTopicLists()}
           </div>
@@ -1286,6 +1263,31 @@ Use this format for different question types:
     }
   };
 
+  // Function to regenerate topics
+  const handleRegenerateTopics = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      
+      // Clear existing topics
+      setAvailableTopics([]);
+      
+      const topics = await generateTopics(
+        formData.examBoard,
+        formData.examType,
+        formData.subject || formData.newSubject
+      );
+      
+      setAvailableTopics(topics);
+      setHierarchicalTopics(topics.map(topic => ({ topic })));
+      setTopicListSaved(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // New function to render topic selection modal
   const renderTopicModal = () => {
     if (!showTopicModal) return null;
@@ -1301,26 +1303,39 @@ Use this format for different question types:
           <div className="topic-modal-body">
             {isGenerating ? (
               <div className="loading-indicator">
-                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
                 <div className="spinner"></div>
+                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
+                <p className="loading-subtext">This may take a moment as we analyze the curriculum and create relevant topics.</p>
               </div>
             ) : (
               <>
                 {availableTopics.length > 0 ? (
-                  <div className="topic-list-container">
-                    {availableTopics.map((topic) => (
-                      <div 
-                        key={topic} 
-                        className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
-                        onClick={() => handleTopicClick(topic)}
+                  <>
+                    <div className="topics-header-actions">
+                      <h4>Available Topics</h4>
+                      <button 
+                        className="regenerate-topics-button"
+                        onClick={handleRegenerateTopics}
+                        disabled={isGenerating}
                       >
-                        {topic}
-                      </div>
-                    ))}
-                  </div>
+                        Regenerate Topics
+                      </button>
+                    </div>
+                    <div className="topic-list-container">
+                      {availableTopics.map((topic) => (
+                        <div 
+                          key={topic} 
+                          className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
+                          onClick={() => handleTopicClick(topic)}
+                        >
+                          {topic}
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 ) : (
                   <div className="no-topics-message">
-                    <p>No topics generated yet. Use the "Generate Topics" button to create topics.</p>
+                    <p>No topics generated yet. Click the "Generate Topics" button to create topics for this subject.</p>
                   </div>
                 )}
               </>
@@ -1348,26 +1363,24 @@ Use this format for different question types:
     );
   };
 
-  // Render topic selection UI with modal button
+  // Updated function to render topic selection UI
   const renderTopicSelectionUI = () => {
     return (
       <div className="topic-selection-container">
-        <button
-          className="generate-topics-button"
-          onClick={() => {
-            setTopicListSaved(false);
-            setShowTopicModal(true);
-          }}
-        >
-          Generate Topics
-        </button>
-        
         <div className="selected-topic-display">
           <label>Selected Topic:</label>
           <div className="selected-topic">
             {formData.topic ? formData.topic : "None selected"}
           </div>
         </div>
+        
+        <button
+          className="generate-topics-button"
+          onClick={handleGenerateTopics}
+          disabled={isGenerating || !(formData.subject || formData.newSubject)}
+        >
+          {isGenerating ? "Generating..." : "Generate Topics"}
+        </button>
         
         <div className="topic-input-section">
           <label>Or Enter a New Topic:</label>
@@ -1379,6 +1392,8 @@ Use this format for different question types:
             placeholder="Enter a specific topic"
           />
         </div>
+        
+        {error && <div className="error-message">{error}</div>}
       </div>
     );
   };
