@@ -72,40 +72,34 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   const getExamInfo = (subject) => {
     try {
       const cards = Object.values(groupedCards[subject]).flat();
-      if (cards.length === 0) return { examType: '', examBoard: '' };
+      if (cards.length === 0) return { examType: null, examBoard: null };
       
       // Get data directly from the first card
       const firstCard = cards[0];
       
-      // Extract exam type and board, using direct properties with fallbacks
-      // Check ALL possible property names to ensure we get the values
-      let examType = '';
-      if (firstCard.examType) examType = firstCard.examType;
-      else if (firstCard.courseType) examType = firstCard.courseType;
-      else if (firstCard.type) examType = firstCard.type;
-      else if (firstCard.course_type) examType = firstCard.course_type;
+      // Log the complete card to see its structure
+      console.log(`CARD DATA FOR ${subject}:`, firstCard);
       
-      let examBoard = '';
-      if (firstCard.examBoard) examBoard = firstCard.examBoard;
-      else if (firstCard.board) examBoard = firstCard.board;
-      else if (firstCard.exam_board) examBoard = firstCard.exam_board;
+      // Direct access to the most common property names
+      let examType = firstCard.examType || firstCard.courseType || firstCard.type || null;
+      let examBoard = firstCard.examBoard || firstCard.board || null;
       
-      // Force values for testing
-      if (subject === 'Design and Technology - Resistant Materials') {
-        examType = 'GCSE';
-        examBoard = 'AQA';
+      // For debugging specific subjects
+      if (subject === 'Environmental Science') {
+        console.log('Environmental Science card details:', {
+          hasExamType: !!firstCard.examType,
+          hasExamBoard: !!firstCard.examBoard,
+          firstCard
+        });
       }
       
-      console.log(`Subject ${subject}: Card metadata - Type=${examType}, Board=${examBoard}`);
-      console.log('First card data:', JSON.stringify(firstCard, null, 2));
-      
       return { 
-        examType: examType || '',
-        examBoard: examBoard || ''
+        examType,
+        examBoard
       };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
-      return { examType: '', examBoard: '' };
+      return { examType: null, examBoard: null };
     }
   };
   
@@ -211,8 +205,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                 <div className="subject-info">
                   <h2>{subject}</h2>
                   <div className="subject-meta">
-                    <span className="meta-tag exam-type">{examType || 'Course'}</span>
-                    <span className="meta-tag exam-board">{examBoard || 'Board'}</span>
+                    {examType && <span className="meta-tag exam-type">{examType}</span>}
+                    {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
                   </div>
                 </div>
                 <span className="card-count">

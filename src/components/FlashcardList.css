@@ -219,12 +219,13 @@
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 820px) {
   .flashcard-list {
     flex-direction: column;
     padding: 0;
     margin: 0;
     gap: 5px;
+    width: 100%;
   }
 
   .subject-column {
@@ -232,6 +233,8 @@
     margin-bottom: 8px;
     border-radius: 8px;
     overflow: hidden;
+    min-width: unset;
+    flex: 1 1 auto;
   }
   
   .subject-header, .topic-header {
@@ -239,9 +242,27 @@
     padding: 10px;
   }
 
+  .subject-content {
+    min-width: 0; /* Allow content to shrink below min-content width */
+    overflow: hidden; /* Prevent overflow */
+  }
+
+  .subject-header h2 {
+    font-size: 1.2em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 5px 0;
+  }
+
   .subject-meta {
     margin-top: 5px;
     margin-bottom: 0;
+  }
+
+  .meta-tag {
+    padding: 4px 8px;
+    font-size: 0.8em;
   }
 
   .topic-group {
@@ -269,7 +290,7 @@
     width: 95% !important;
     margin: 0 0 15px 0 !important;
     min-height: 250px;
-    max-width: 500px;
+    max-width: 100%;
   }
   
   .topic-cards::-webkit-scrollbar {
@@ -292,5 +313,38 @@
     min-height: 350px;
     background-color: #f9f9f9;
     border-radius: 0 0 8px 8px;
+  }
+
+  /* Adjust card count and print button for smaller screens */
+  .card-count {
+    font-size: 0.75rem;
+  }
+
+  .print-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+    padding: 3px;
+  }
+}
+
+/* Extra small devices (phones) */
+@media (max-width: 480px) {
+  .subject-header h2 {
+    font-size: 1.1em;
+  }
+  
+  .meta-tag {
+    padding: 3px 6px;
+    font-size: 0.75em;
+  }
+  
+  .print-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .subject-meta {
+    gap: 5px;
   }
 }
