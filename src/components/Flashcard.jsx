@@ -176,10 +176,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     if (
       e.target.closest('.button-container') || 
       e.target.closest('.delete-confirm') || 
-      e.target.closest('.color-picker-container') || 
-      e.target.closest('.delete-btn') || 
-      e.target.closest('.color-btn') || 
-      e.target.closest('.info-btn')
+      e.target.closest('.color-picker-container')
     ) {
       return;
     }
@@ -313,24 +310,6 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         
         <div className="flashcard-inner">
           <div className="flashcard-front" style={{ color: textColor }}>
-            {hasAdditionalInfo && !preview && (
-              <button 
-                className="info-btn" 
-                onClick={toggleInfoModal}
-                style={{ 
-                  position: "absolute", 
-                  top: "2px", 
-                  right: "2px", 
-                  zIndex: 10,
-                  fontSize: "0.9rem",
-                  padding: "1px 5px",
-                  backgroundColor: "rgba(255, 255, 255, 0.4)"
-                }}
-              >
-                ℹ️
-              </button>
-            )}
-            
             {isMultipleChoice ? (
               <>
                 <ScaledText className="question-title" maxFontSize={16}>

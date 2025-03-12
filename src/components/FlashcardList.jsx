@@ -150,7 +150,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                 boxShadow: `0 0 8px ${subjectColor}`,
                 borderBottom: `1px solid ${subjectColor}`,
                 color: textColor,
-                backgroundColor: subjectColor
+                backgroundColor: subjectColor,
+                position: 'relative'
               }}
             >
               <div className="subject-info">

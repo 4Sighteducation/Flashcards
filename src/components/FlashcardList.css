@@ -40,33 +40,33 @@
 .subject-header h2 {
   margin: 0;
   font-size: 1.2rem;
+  margin-bottom: 6px;
 }
 
 .subject-meta {
   display: flex;
-  gap: 10px;
-  margin-top: 8px;
-  margin-bottom: 5px;
+  gap: 8px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .meta-tag {
   display: inline-block;
   font-size: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.85);
   color: inherit;
-  padding: 4px 10px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 3px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  letter-spacing: 0.5px;
 }
 
 .exam-type {
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 .exam-board {
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 .topic-group {
@@ -148,9 +148,34 @@
 @media (max-width: 768px) {
   .flashcard-list {
     flex-direction: column;
+    padding: 0;
+    margin: 0;
+    gap: 10px;
   }
 
   .subject-column {
     min-width: 100%;
+    max-width: 100%;
+    width: 100%;
+    margin: 0 0 8px 0;
+  }
+  
+  .topic-cards {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .flashcard {
+    width: 100%;
+    max-width: 100%;
+    margin: 5px 0;
+  }
+  
+  .subject-header {
+    padding: 12px 10px;
+  }
+  
+  .topic-header {
+    padding: 8px 10px;
   }
 }
