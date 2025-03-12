@@ -89,6 +89,11 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // New state for save confirmation
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
 
+  // New state for topic selection confirmation
+  const [showTopicConfirmation, setShowTopicConfirmation] = useState(false);
+  const [selectedTopicForConfirmation, setSelectedTopicForConfirmation] = useState("");
+  const [topicListSaved, setTopicListSaved] = useState(false);
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Load from localStorage
@@ -363,14 +368,11 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         saveTopicListToKnack(newSavedList);
       }
       
-      // Reset dialog
+      // Close save dialog but keep topic modal open
       setShowSaveTopicDialog(false);
       setTopicListName("");
       setError(null);
-      
-      // Close topic modal and move to next step
-      setShowTopicModal(false);
-      handleNextStep();
+      setTopicListSaved(true);
       
       console.log("Topic list saved:", newSavedList);
     } catch (error) {
@@ -1052,6 +1054,27 @@ Use this format for different question types:
     return luminance > 0.5 ? '#000000' : '#ffffff';
   };
 
+  // Function to handle generating topics from the main screen
+  const handleGenerateTopics = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      const topics = await generateTopics(
+        formData.examBoard,
+        formData.examType,
+        formData.subject || formData.newSubject
+      );
+      setAvailableTopics(topics);
+      setHierarchicalTopics(topics.map(topic => ({ topic })));
+      setTopicListSaved(false);
+      setShowTopicModal(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Render step content based on current step
   const renderStepContent = () => {
     switch (currentStep) {
@@ -1138,9 +1161,6 @@ Use this format for different question types:
           <div className="step-content">
             <h2>Select a Topic</h2>
             
-            {/* Saved topic lists */}
-            {renderSavedTopicLists()}
-            
             <div className="form-group">
               <label>Topic</label>
               {renderTopicSelectionUI()}
@@ -1156,6 +1176,21 @@ Use this format for different question types:
                 placeholder="Enter a new topic"
               />
             </div>
+            
+            {/* Button to generate topics */}
+            <div className="form-group">
+              <button 
+                className="generate-topics-main-button"
+                onClick={handleGenerateTopics}
+                disabled={isGenerating || !(formData.subject || formData.newSubject)}
+              >
+                {isGenerating ? "Generating..." : "Generate Topics"}
+              </button>
+              {error && <div className="error-message">{error}</div>}
+            </div>
+            
+            {/* Saved topic lists shown below */}
+            {renderSavedTopicLists()}
           </div>
         );
         
@@ -1256,7 +1291,7 @@ Use this format for different question types:
     if (!showTopicModal) return null;
     
     return (
-      <div className="topic-modal-overlay" onClick={() => setShowTopicModal(false)}>
+      <div className="topic-modal-overlay">
         <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="topic-modal-header">
             <h3>Select a Topic</h3>
@@ -1276,8 +1311,8 @@ Use this format for different question types:
                     {availableTopics.map((topic) => (
                       <div 
                         key={topic} 
-                        className={`topic-item ${formData.topic === topic ? 'selected' : ''}`}
-                        onClick={() => handleTopicSelection(topic)}
+                        className={`topic-item ${selectedTopicForConfirmation === topic ? 'selected' : ''}`}
+                        onClick={() => handleTopicClick(topic)}
                       >
                         {topic}
                       </div>
@@ -1285,7 +1320,7 @@ Use this format for different question types:
                   </div>
                 ) : (
                   <div className="no-topics-message">
-                    <p>No topics generated yet. Click "Generate Topics" to continue.</p>
+                    <p>No topics generated yet. Use the "Generate Topics" button to create topics.</p>
                   </div>
                 )}
               </>
@@ -1294,27 +1329,11 @@ Use this format for different question types:
           
           <div className="topic-modal-actions">
             <button 
-              className="generate-button"
-              disabled={isGenerating}
-              onClick={async () => {
-                try {
-                  setIsGenerating(true);
-                  setError(null);
-                  const topics = await generateTopics(
-                    formData.examBoard,
-                    formData.examType,
-                    formData.subject || formData.newSubject
-                  );
-                  setAvailableTopics(topics);
-                  setHierarchicalTopics(topics.map(topic => ({ topic })));
-                } catch (err) {
-                  setError(err.message);
-                } finally {
-                  setIsGenerating(false);
-                }
-              }}
+              className="save-button"
+              disabled={isGenerating || topicListSaved || availableTopics.length === 0}
+              onClick={() => setShowSaveTopicDialog(true)}
             >
-              Generate Topics
+              {topicListSaved ? "Topic List Saved" : "Save Topic List"}
             </button>
             
             <button 
@@ -1333,19 +1352,22 @@ Use this format for different question types:
   const renderTopicSelectionUI = () => {
     return (
       <div className="topic-selection-container">
+        <button
+          className="generate-topics-button"
+          onClick={() => {
+            setTopicListSaved(false);
+            setShowTopicModal(true);
+          }}
+        >
+          Generate Topics
+        </button>
+        
         <div className="selected-topic-display">
           <label>Selected Topic:</label>
           <div className="selected-topic">
             {formData.topic ? formData.topic : "None selected"}
           </div>
         </div>
-        
-        <button
-          className="open-topic-modal-button"
-          onClick={() => setShowTopicModal(true)}
-        >
-          Browse Topics
-        </button>
         
         <div className="topic-input-section">
           <label>Or Enter a New Topic:</label>
@@ -1513,34 +1535,50 @@ Use this format for different question types:
     );
   };
 
-  // Function to handle topic selection in the modal
-  const handleTopicSelection = (topic) => {
-    // Set the selected topic
-    setFormData(prev => ({ ...prev, topic: topic }));
-    
-    // Show save confirmation if we have topics
-    if (hierarchicalTopics.length > 0) {
-      setShowSaveConfirmation(true);
-    } else {
-      // If no hierarchical topics, just close modal and move to next step
-      setShowTopicModal(false);
-      handleNextStep();
-    }
+  // Function to handle topic click in the modal
+  const handleTopicClick = (topic) => {
+    setSelectedTopicForConfirmation(topic);
+    setShowTopicConfirmation(true);
   };
   
-  // Function to handle save confirmation response
-  const handleSaveConfirmationResponse = (shouldSave) => {
-    // Close the confirmation dialog
-    setShowSaveConfirmation(false);
+  // Function to confirm topic selection
+  const confirmTopicSelection = () => {
+    setFormData(prev => ({ ...prev, topic: selectedTopicForConfirmation }));
+    setShowTopicConfirmation(false);
+    setShowTopicModal(false);
+    handleNextStep();
+  };
+
+  // Render topic confirmation dialog
+  const renderTopicConfirmation = () => {
+    if (!showTopicConfirmation) return null;
     
-    // If user wants to save, show the save dialog
-    if (shouldSave) {
-      setShowSaveTopicDialog(true);
-    } else {
-      // Otherwise close the topic modal and proceed to next step
-      setShowTopicModal(false);
-      handleNextStep();
-    }
+    return (
+      <div className="topic-confirmation-overlay">
+        <div className="topic-confirmation-dialog">
+          <h4>Confirm Topic Selection</h4>
+          <div className="selected-topic-preview">
+            {selectedTopicForConfirmation}
+          </div>
+          <p>Would you like to select this topic?</p>
+          
+          <div className="confirmation-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => setShowTopicConfirmation(false)}
+            >
+              Close and choose again
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={confirmTopicSelection}
+            >
+              Select this topic
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -1607,6 +1645,9 @@ Use this format for different question types:
       
       {/* Render save confirmation dialog */}
       {renderSaveConfirmation()}
+      
+      {/* Render topic selection confirmation dialog */}
+      {renderTopicConfirmation()}
     </div>
   );
 };
