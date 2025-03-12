@@ -148,7 +148,7 @@ const SubjectsList = ({
   );
 };
 
-// Helper function to determine text color based on background color brightness
+// Update the getContrastColor function to ensure better contrast even with dark colors
 const getContrastColor = (hexColor) => {
   // Default to black if no color provided
   if (!hexColor) return "#000000";
@@ -162,7 +162,8 @@ const getContrastColor = (hexColor) => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
   // Return white for dark backgrounds, black for light backgrounds
-  return brightness > 0.5 ? "#000000" : "#ffffff";
+  // Using a lower threshold to ensure more text is white on dark backgrounds
+  return brightness > 128 ? "#000000" : "#ffffff";
 };
 
 export default SubjectsList;

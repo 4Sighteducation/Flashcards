@@ -136,24 +136,25 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     }
   };
   
-  // Preserve the letters for the options
+  // Process options to ensure consistent formatting
+  const processedOptions = options.map((option, index) => {
+    const letters = ['a', 'b', 'c', 'd'];
+    
+    // Check if the option already has a letter prefix (like "a) Option")
+    if (option.match(/^[a-d]\)\s*/i)) {
+      return option; // Already has a prefix, leave as is
+    }
+    
+    // Add the appropriate letter prefix
+    return `${letters[index % 4]}) ${option}`;
+  });
+  
   return (
     <div className="options-container" ref={containerRef}>
       <ol type="a">
-        {options.map((option, index) => {
-          // Keep the letter prefix if it exists, or add it if it doesn't
-          let displayOption = option;
-          if (!option.match(/^[a-d]\)\s*/i)) {
-            const letters = ['a', 'b', 'c', 'd'];
-            displayOption = `${letters[index % 4]}) ${option}`;
-          }
-          
-          return (
-            <li key={index}>
-              {displayOption}
-            </li>
-          );
-        })}
+        {processedOptions.map((option, index) => (
+          <li key={index}>{option}</li>
+        ))}
       </ol>
     </div>
   );
@@ -331,8 +332,8 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <div dangerouslySetInnerHTML={{ 
                 __html: card.back || 
                   (card.questionType === 'multiple_choice' ? 
-                    `Correct Answer: ${card.correctAnswer}<br><br>${card.detailedAnswer || ''}` : 
-                    card.detailedAnswer || "No answer") 
+                    `Correct Answer: ${card.correctAnswer}` : 
+                    "No answer") 
               }} />
             </ScaledText>
             

@@ -1067,18 +1067,6 @@ function App() {
                 updateColorMapping={updateColorMapping}
                 refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
               />
-
-              {selectedSubject && (
-                <TopicsList
-                  topics={getUserTopicsForSubject(selectedSubject)}
-                  selectedTopic={selectedTopic}
-                  onSelectTopic={setSelectedTopic}
-                  getColorForTopic={(topic) =>
-                    getColorForSubjectTopic(selectedSubject, topic)
-                  }
-                  updateTopics={(topics) => updateUserTopicsForSubject(selectedSubject, topics)}
-                />
-              )}
             </div>
 
             <div className="bank-content">
