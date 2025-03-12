@@ -86,6 +86,9 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   // New state for topic modal
   const [showTopicModal, setShowTopicModal] = useState(false);
 
+  // New state for save confirmation
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Load from localStorage
@@ -364,6 +367,10 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       setShowSaveTopicDialog(false);
       setTopicListName("");
       setError(null);
+      
+      // Close topic modal and move to next step
+      setShowTopicModal(false);
+      handleNextStep();
       
       console.log("Topic list saved:", newSavedList);
     } catch (error) {
@@ -1139,9 +1146,6 @@ Use this format for different question types:
               {renderTopicSelectionUI()}
             </div>
             
-            {/* Display hierarchical topics */}
-            {!isGenerating && hierarchicalTopics.length > 0 && renderHierarchicalTopics()}
-            
             <div className="form-group">
               <label>Or Add New Topic</label>
               <input
@@ -1273,9 +1277,7 @@ Use this format for different question types:
                       <div 
                         key={topic} 
                         className={`topic-item ${formData.topic === topic ? 'selected' : ''}`}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, topic: topic }));
-                        }}
+                        onClick={() => handleTopicSelection(topic)}
                       >
                         {topic}
                       </div>
@@ -1314,18 +1316,6 @@ Use this format for different question types:
             >
               Generate Topics
             </button>
-            
-            {availableTopics.length > 0 && (
-              <button 
-                className="save-button"
-                onClick={() => {
-                  setShowSaveTopicDialog(true);
-                  setShowTopicModal(false);
-                }}
-              >
-                Save Topic List
-              </button>
-            )}
             
             <button 
               className="close-button"
@@ -1523,6 +1513,36 @@ Use this format for different question types:
     );
   };
 
+  // Function to handle topic selection in the modal
+  const handleTopicSelection = (topic) => {
+    // Set the selected topic
+    setFormData(prev => ({ ...prev, topic: topic }));
+    
+    // Show save confirmation if we have topics
+    if (hierarchicalTopics.length > 0) {
+      setShowSaveConfirmation(true);
+    } else {
+      // If no hierarchical topics, just close modal and move to next step
+      setShowTopicModal(false);
+      handleNextStep();
+    }
+  };
+  
+  // Function to handle save confirmation response
+  const handleSaveConfirmationResponse = (shouldSave) => {
+    // Close the confirmation dialog
+    setShowSaveConfirmation(false);
+    
+    // If user wants to save, show the save dialog
+    if (shouldSave) {
+      setShowSaveTopicDialog(true);
+    } else {
+      // Otherwise close the topic modal and proceed to next step
+      setShowTopicModal(false);
+      handleNextStep();
+    }
+  };
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
@@ -1584,6 +1604,9 @@ Use this format for different question types:
       </div>
       
       {renderSuccessModal()}
+      
+      {/* Render save confirmation dialog */}
+      {renderSaveConfirmation()}
     </div>
   );
 };
