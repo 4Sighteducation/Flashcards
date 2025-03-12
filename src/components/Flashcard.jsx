@@ -13,11 +13,11 @@ const getContrastColor = (hexColor) => {
   const g = parseInt(hexColor.substring(2, 4), 16);
   const b = parseInt(hexColor.substring(4, 6), 16);
   
-  // Calculate brightness using YIQ formula
+  // Calculate brightness using YIQ formula - adjusted for better contrast
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   
-  // Return white for dark backgrounds, black for light backgrounds
-  return brightness >= 128 ? '#000000' : '#ffffff';
+  // Lower threshold (120 instead of 128) to ensure more text is white on darker backgrounds
+  return brightness > 120 ? '#000000' : '#ffffff';
 };
 
 const ScaledText = ({ children, minFontSize = 6, maxFontSize = 16, className = '' }) => {
@@ -296,7 +296,15 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <button 
                 className="info-btn" 
                 onClick={toggleInfoModal}
-                style={{ position: "absolute", top: "5px", left: "5px", zIndex: 10 }}
+                style={{ 
+                  position: "absolute", 
+                  top: "2px", 
+                  right: "2px", 
+                  zIndex: 10,
+                  fontSize: "0.9rem",
+                  padding: "1px 5px",
+                  backgroundColor: "rgba(255, 255, 255, 0.4)"
+                }}
               >
                 ℹ️
               </button>

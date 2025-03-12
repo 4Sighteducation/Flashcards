@@ -59,7 +59,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     
     // Return white for dark backgrounds, black for light backgrounds
-    return brightness >= 128 ? '#000000' : '#ffffff';
+    // Using a lower threshold to ensure more text is white on dark backgrounds
+    return brightness > 120 ? '#000000' : '#ffffff';
   };
 
   // Function to get the most common exam type and board for a subject
@@ -148,7 +149,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               style={{ 
                 boxShadow: `0 0 8px ${subjectColor}`,
                 borderBottom: `1px solid ${subjectColor}`,
-                color: textColor
+                color: textColor,
+                backgroundColor: subjectColor
               }}
             >
               <div className="subject-info">
