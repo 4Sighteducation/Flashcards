@@ -138,6 +138,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         const subjectCards = Object.values(groupedCards[subject]).flat();
         const subjectColor = subjectCards[0]?.baseColor || subjectCards[0]?.cardColor || '#e0e0e0';
         const { examType, examBoard } = getExamInfo(subject);
+        const textColor = getContrastColor(subjectColor);
         
         return (
           <div key={subject} className="subject-column">
@@ -146,7 +147,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               onClick={() => toggleExpand(subject)}
               style={{ 
                 boxShadow: `0 0 8px ${subjectColor}`,
-                borderBottom: `1px solid ${subjectColor}`
+                borderBottom: `1px solid ${subjectColor}`,
+                color: textColor
               }}
             >
               <div className="subject-info">

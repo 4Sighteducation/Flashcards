@@ -136,23 +136,15 @@ const MultipleChoiceOptions = ({ options, preview = false }) => {
     }
   };
   
-  // Process options to ensure consistent formatting
-  const processedOptions = options.map((option, index) => {
-    const letters = ['a', 'b', 'c', 'd'];
-    
-    // Check if the option already has a letter prefix (like "a) Option")
-    if (option.match(/^[a-d]\)\s*/i)) {
-      return option; // Already has a prefix, leave as is
-    }
-    
-    // Add the appropriate letter prefix
-    return `${letters[index % 4]}) ${option}`;
+  // Clean options by removing any existing letter prefixes
+  const cleanedOptions = options.map(option => {
+    return option.replace(/^[a-d]\)\s*/i, '');
   });
   
   return (
     <div className="options-container" ref={containerRef}>
       <ol type="a">
-        {processedOptions.map((option, index) => (
+        {cleanedOptions.map((option, index) => (
           <li key={index}>{option}</li>
         ))}
       </ol>
@@ -329,12 +321,27 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             backgroundColor: '#ffffff' 
           }}>
             <ScaledText maxFontSize={14}>
-              <div dangerouslySetInnerHTML={{ 
-                __html: card.back || 
-                  (card.questionType === 'multiple_choice' ? 
-                    `Correct Answer: ${card.correctAnswer}` : 
-                    "No answer") 
-              }} />
+              {card.questionType === 'multiple_choice' ? (
+                <div>
+                  Correct Answer: {(() => {
+                    // Clean the correct answer of any existing prefix
+                    const cleanAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '');
+                    
+                    // Find the index of this answer in the options array
+                    const answerIndex = card.options.findIndex(option => 
+                      option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim()
+                    );
+                    
+                    // Get the letter for this index (a, b, c, d)
+                    const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
+                    
+                    // Return formatted answer with letter prefix
+                    return answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
+                  })()}
+                </div>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: card.back || "No answer" }} />
+              )}
             </ScaledText>
             
             {card.boxNum !== undefined && (

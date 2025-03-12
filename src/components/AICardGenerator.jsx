@@ -862,20 +862,19 @@ Use this format for different question types:
             back: `Correct Answer: ${card.correctAnswer}\n\n${card.detailedAnswer}`
           };
         } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
-          let keyPointsFormatted = "";
-          if (card.keyPoints && Array.isArray(card.keyPoints)) {
-            keyPointsFormatted = "<ul>" + 
-              card.keyPoints.map(point => `<li>${point}</li>`).join("") + 
-              "</ul>";
-          }
-          
+          // Create key points as bullet points if they exist
+          const keyPointsHtml = card.keyPoints && card.keyPoints.length > 0
+            ? card.keyPoints.map(point => `• ${point}`).join("<br/>")
+            : "";
+            
           return {
             ...baseCard,
             question: card.question,
             keyPoints: card.keyPoints || [],
             detailedAnswer: card.detailedAnswer,
+            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: keyPointsFormatted + "<div class='detailed-answer'>" + card.detailedAnswer + "</div>"
+            back: keyPointsHtml // Only show key points, not detailed answer
           };
         } else {
           return {
