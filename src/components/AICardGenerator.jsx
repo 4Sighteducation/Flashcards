@@ -754,7 +754,7 @@ Use this format for different question types:
     "topic": "${finalTopic}",
     "questionType": "multiple_choice",
     "question": "Clear, focused question based on the curriculum",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
     "correctAnswer": "The correct option exactly as written in options array",
     "detailedAnswer": "Detailed explanation of why this answer is correct, with key concepts and examples"
   }
@@ -858,8 +858,9 @@ Use this format for different question types:
             options: card.options,
             correctAnswer: card.correctAnswer,
             detailedAnswer: card.detailedAnswer,
+            additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: `Correct Answer: ${card.correctAnswer}\n\n${card.detailedAnswer}`
+            back: `Correct Answer: ${card.correctAnswer}` // Remove detailed answer from back
           };
         } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
           // Create key points as bullet points if they exist
