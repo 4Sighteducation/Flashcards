@@ -83,6 +83,9 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     addedCards: []
   });
 
+  // New state for topic modal
+  const [showTopicModal, setShowTopicModal] = useState(false);
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Load from localStorage
@@ -1244,38 +1247,53 @@ Use this format for different question types:
     }
   };
 
-  // Render topic selection UI with loading indicator
-  const renderTopicSelectionUI = () => {
+  // New function to render topic selection modal
+  const renderTopicModal = () => {
+    if (!showTopicModal) return null;
+    
     return (
-      <div className="topic-selection-container">
-        {isGenerating ? (
-          <div className="loading-indicator">
-            <p>Generating topics for {formData.subject || formData.newSubject}...</p>
-            <div className="spinner"></div>
+      <div className="topic-modal-overlay" onClick={() => setShowTopicModal(false)}>
+        <div className="topic-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="topic-modal-header">
+            <h3>Select a Topic</h3>
+            <button className="close-modal-button" onClick={() => setShowTopicModal(false)}>×</button>
           </div>
-        ) : (
-          <>
-            {availableTopics.length > 0 ? (
-              <select
-                name="topic"
-                value={formData.topic}
-                onChange={handleChange}
-              >
-                <option value="">Select a Topic</option>
-                {availableTopics.map((topic) => (
-                  <option key={topic} value={topic}>
-                    {topic}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="no-topics-message">
-                <p>No topics generated yet. Click "Generate Topics" to continue.</p>
+          
+          <div className="topic-modal-body">
+            {isGenerating ? (
+              <div className="loading-indicator">
+                <p>Generating topics for {formData.subject || formData.newSubject}...</p>
+                <div className="spinner"></div>
               </div>
+            ) : (
+              <>
+                {availableTopics.length > 0 ? (
+                  <div className="topic-list-container">
+                    {availableTopics.map((topic) => (
+                      <div 
+                        key={topic} 
+                        className={`topic-item ${formData.topic === topic ? 'selected' : ''}`}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, topic: topic }));
+                        }}
+                      >
+                        {topic}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-topics-message">
+                    <p>No topics generated yet. Click "Generate Topics" to continue.</p>
+                  </div>
+                )}
+              </>
             )}
-            
-            <button
+          </div>
+          
+          <div className="topic-modal-actions">
+            <button 
               className="generate-button"
+              disabled={isGenerating}
               onClick={async () => {
                 try {
                   setIsGenerating(true);
@@ -1286,6 +1304,7 @@ Use this format for different question types:
                     formData.subject || formData.newSubject
                   );
                   setAvailableTopics(topics);
+                  setHierarchicalTopics(topics.map(topic => ({ topic })));
                 } catch (err) {
                   setError(err.message);
                 } finally {
@@ -1295,8 +1314,59 @@ Use this format for different question types:
             >
               Generate Topics
             </button>
-          </>
-        )}
+            
+            {availableTopics.length > 0 && (
+              <button 
+                className="save-button"
+                onClick={() => {
+                  setShowSaveTopicDialog(true);
+                  setShowTopicModal(false);
+                }}
+              >
+                Save Topic List
+              </button>
+            )}
+            
+            <button 
+              className="close-button"
+              onClick={() => setShowTopicModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render topic selection UI with modal button
+  const renderTopicSelectionUI = () => {
+    return (
+      <div className="topic-selection-container">
+        <div className="selected-topic-display">
+          <label>Selected Topic:</label>
+          <div className="selected-topic">
+            {formData.topic ? formData.topic : "None selected"}
+          </div>
+        </div>
+        
+        <button
+          className="open-topic-modal-button"
+          onClick={() => setShowTopicModal(true)}
+        >
+          Browse Topics
+        </button>
+        
+        <div className="topic-input-section">
+          <label>Or Enter a New Topic:</label>
+          <input
+            type="text"
+            name="newTopic"
+            value={formData.newTopic}
+            onChange={handleChange}
+            placeholder="Enter a specific topic"
+          />
+        </div>
       </div>
     );
   };
@@ -1455,15 +1525,16 @@ Use this format for different question types:
 
   return (
     <div className="ai-card-generator">
-      {renderSaveTopicDialog()}
-      {renderSuccessModal()}
-      
       <div className="generator-header">
-        <h1>AI Card Generator</h1>
-        <button className="close-button" onClick={onClose}>
-          &times;
-        </button>
+        <h1>AI Flashcard Generator</h1>
+        <button className="close-button" onClick={onClose}>&times;</button>
       </div>
+      
+      {/* Render the topic modal */}
+      {renderTopicModal()}
+      
+      {/* Render the save topic dialog */}
+      {renderSaveTopicDialog()}
       
       <div className="progress-bar">
         {Array.from({ length: totalSteps }).map((_, idx) => (
@@ -1511,6 +1582,8 @@ Use this format for different question types:
           </button>
         )}
       </div>
+      
+      {renderSuccessModal()}
     </div>
   );
 };

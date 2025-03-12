@@ -154,7 +154,10 @@ const SubjectsList = ({
               className="refresh-color-button"
               onClick={(e) => {
                 e.stopPropagation();
-                refreshSubjectAndTopicColors(subject, getColorForSubject(subject));
+                // Set up the modal for direct refresh
+                setEditingSubject(subject);
+                setSelectedColor(getColorForSubject(subject));
+                setShowRefreshModal(true);
               }}
               title="Refresh all topic colors based on this subject's color"
             >

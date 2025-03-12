@@ -126,22 +126,48 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           // Log the complete card to see its structure
           console.log(`CARD DATA FOR ${subject}:`, firstCard);
           
-          // Try to get values from card properties
-          if (!examType) {
-            examType = firstCard.examType || firstCard.courseType || firstCard.type || null;
+          // Try to get values directly from the card properties
+          if (!examType && firstCard.examType) {
+            examType = firstCard.examType;
+          } else if (!examType && firstCard.courseType) {
+            examType = firstCard.courseType;
+          } else if (!examType && firstCard.type) {
+            examType = firstCard.type;
           }
           
-          if (!examBoard) {
-            examBoard = firstCard.examBoard || firstCard.board || null;
+          if (!examBoard && firstCard.examBoard) {
+            examBoard = firstCard.examBoard;
+          } else if (!examBoard && firstCard.board) {
+            examBoard = firstCard.board;
+          }
+          
+          // If we still don't have values, check meta properties if they exist
+          if ((!examType || !examBoard) && firstCard.meta) {
+            console.log(`Checking meta data for ${subject}:`, firstCard.meta);
+            if (!examType && firstCard.meta.examType) {
+              examType = firstCard.meta.examType;
+            } else if (!examType && firstCard.meta.courseType) {
+              examType = firstCard.meta.courseType;
+            }
+            
+            if (!examBoard && firstCard.meta.examBoard) {
+              examBoard = firstCard.meta.examBoard;
+            } else if (!examBoard && firstCard.meta.board) {
+              examBoard = firstCard.meta.board;
+            }
           }
         }
       }
+      
+      // Set fallback values to ensure metadata displays something
+      if (!examType) examType = "Course";
+      if (!examBoard) examBoard = "General";
       
       console.log(`Subject "${subject}" - Extracted: Type=${examType}, Board=${examBoard}`);
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
-      return { examType: null, examBoard: null };
+      return { examType: "Course", examBoard: "General" };
     }
   };
   
