@@ -10,12 +10,16 @@ This is a React application that integrates with Knack to provide a flashcard st
 - Spaced repetition system with 5 boxes for optimized learning
 - Seamless integration with Knack database
 - Responsive design for mobile and desktop
+- Multi-language support with on-demand translation of flashcard content
+- Support for English, Welsh, Arabic, Spanish, Italian, French, Japanese, Vietnamese, and Chinese
 
 ## Project Structure
 
 - `src/App.js` - Main application component
 - `src/components/` - React components for various app features
+- `src/utils/` - Utility functions and services, including translation
 - `knack-flashcard-integration.js` - Custom JavaScript for Knack integration
+- `public/locales/` - Translation files for i18next
 
 ## Local Development
 
@@ -24,11 +28,38 @@ This is a React application that integrates with Knack to provide a flashcard st
    ```
    npm install
    ```
-3. Start the development server:
+3. Set up environment variables:
+   - Create a `.env` file in the root directory
+   - Add `REACT_APP_LIBRE_TRANSLATE_API_KEY` with your LibreTranslate API key
+   - Add `REACT_APP_TRANSLATE_API` with the LibreTranslate API endpoint
+4. Start the development server:
    ```
    npm start
    ```
-4. Open [http://localhost:3000](http://localhost:3000) to view the app in development mode
+5. Open [http://localhost:3000](http://localhost:3000) to view the app in development mode
+
+## Translation Service
+
+The app uses LibreTranslate for on-demand translation of flashcard content:
+
+1. Users can click the translate button on any flashcard to translate the content
+2. The app uses the LibreTranslate API to translate content between languages
+3. Translations are performed on-demand rather than stored to save space
+4. API rate limits may apply based on your LibreTranslate subscription
+
+### Setting up LibreTranslate
+
+1. Sign up for a LibreTranslate API key at [libretranslate.com](https://libretranslate.com)
+2. Add your API key to the environment variables:
+   ```
+   REACT_APP_LIBRE_TRANSLATE_API_KEY=your_api_key_here
+   REACT_APP_TRANSLATE_API=https://libretranslate.com/translate
+   ```
+3. For Heroku deployment, add the config variable:
+   ```
+   heroku config:set REACT_APP_LIBRE_TRANSLATE_API_KEY=${LIBRE_TRANSLATE_API_KEY}
+   heroku config:set REACT_APP_TRANSLATE_API=https://libretranslate.com/translate
+   ```
 
 ## Deployment
 
@@ -44,11 +75,16 @@ This is a React application that integrates with Knack to provide a flashcard st
    ```
    heroku create vespa-flashcards
    ```
-5. Deploy to Heroku:
+5. Add the environment variables:
+   ```
+   heroku config:set REACT_APP_LIBRE_TRANSLATE_API_KEY=${LIBRE_TRANSLATE_API_KEY}
+   heroku config:set REACT_APP_TRANSLATE_API=https://libretranslate.com/translate
+   ```
+6. Deploy to Heroku:
    ```
    git push heroku main
    ```
-6. Open the deployed app:
+7. Open the deployed app:
    ```
    heroku open
    ```

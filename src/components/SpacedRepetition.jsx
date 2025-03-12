@@ -1,4 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  getDoc,
+  increment
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { getContrastColor } from '../utils/colorUtils';
+import TranslateButton from './TranslateButton';
 import "./SpacedRepetition.css";
 import Flashcard from "./Flashcard";
 
@@ -449,6 +464,7 @@ const SpacedRepetition = ({
                             </div>
                             <div className="card-preview-content">
                               <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
+                              <TranslateButton content={card.front || card.question} sourceLang="en" />
                             </div>
                           </div>
                         ))}
@@ -569,6 +585,10 @@ const SpacedRepetition = ({
                     "No question"
                 }}
               />
+              <TranslateButton 
+                content={currentCards[currentIndex].front || currentCards[currentIndex].question || "No question"} 
+                sourceLang="en" 
+              />
               {currentCards[currentIndex].questionType === 'multiple_choice' && !isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               
               {!currentCards[currentIndex].isReviewable && (
@@ -602,6 +622,16 @@ const SpacedRepetition = ({
                       currentCards[currentIndex].correctAnswer || 
                       "No answer")
                 }}
+              />
+              <TranslateButton 
+                content={
+                  currentCards[currentIndex].back ||
+                  (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
+                    currentCards[currentIndex].detailedAnswer : 
+                    currentCards[currentIndex].correctAnswer || 
+                    "No answer")
+                } 
+                sourceLang="en" 
               />
               {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
             </div>

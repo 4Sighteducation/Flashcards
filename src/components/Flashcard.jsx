@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Flashcard.css';
+import TranslateButton from './TranslateButton';
 
 // Helper function to determine text color based on background color brightness
 const getContrastColor = (hexColor) => {
@@ -318,10 +319,12 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   {card.front || card.question}
                 </ScaledText>
                 <MultipleChoiceOptions options={card.options} preview={preview} />
+                {!preview && <TranslateButton content={card.front || card.question} sourceLang="en" />}
               </>
             ) : (
               <ScaledText maxFontSize={16}>
                 <div dangerouslySetInnerHTML={{ __html: card.front || card.question || "No question" }} />
+                {!preview && <TranslateButton content={card.front || card.question || "No question"} sourceLang="en" />}
               </ScaledText>
             )}
           </div>
@@ -348,9 +351,13 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     // Return formatted answer with letter prefix
                     return answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
                   })()}
+                  {!preview && <TranslateButton content={card.correctAnswer} sourceLang="en" />}
                 </div>
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: card.back || "No answer" }} />
+                <>
+                  <div dangerouslySetInnerHTML={{ __html: card.back || "No answer" }} />
+                  {!preview && <TranslateButton content={card.back || "No answer"} sourceLang="en" />}
+                </>
               )}
             </ScaledText>
             

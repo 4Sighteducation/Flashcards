@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "Cardiau Flash",
+    "loading": "Llwytho...",
+    "returnToCardBank": "Dychwelyd i'r Banc Cardiau",
+    "cardBank": "Banc Cardiau",
+    "spacedRepetition": "Ailadrodd Gydag Ysbaid"
+  },
+  "navigation": {
+    "home": "Hafan",
+    "createCard": "Creu Cerdyn",
+    "myCards": "Fy Nghardiau",
+    "studyCards": "Astudio Cardiau",
+    "aiGenerator": "Generadur AI"
+  },
+  "cardCreation": {
+    "createNewCard": "Creu Cerdyn Newydd",
+    "subject": "Pwnc",
+    "topic": "Testun",
+    "question": "Cwestiwn",
+    "answer": "Ateb",
+    "additionalInfo": "Gwybodaeth Ychwanegol",
+    "cardColor": "Lliw Cerdyn",
+    "saveCard": "Arbed Cerdyn",
+    "cancel": "Canslo",
+    "questionType": "Math o Gwestiwn",
+    "standard": "Safonol",
+    "multipleChoice": "Dewis Lluosog",
+    "options": "Opsiynau (un fesul llinell, yr ateb cywir yn gyntaf)"
+  },
+  "cards": {
+    "noCards": "Dim Cardiau Wedi'u Canfod",
+    "createNewCards": "Creu cardiau newydd neu addasu eich hidlwyr i weld cardiau yma.",
+    "edit": "Golygu",
+    "delete": "Dileu",
+    "confirmDelete": "Ydych chi'n siŵr eich bod chi am ddileu'r cerdyn hwn?",
+    "yes": "Ydw",
+    "no": "Na",
+    "print": "Argraffu",
+    "printAll": "Argraffu Pob Cerdyn"
+  },
+  "study": {
+    "box": "Blwch",
+    "reviewDaily": "Adolygu'n ddyddiol.",
+    "reviewEvery2Days": "Adolygu bob 2 ddiwrnod.",
+    "reviewEvery3Days": "Adolygu bob 3 diwrnod.",
+    "reviewWeekly": "Adolygu bob 7 diwrnod.",
+    "mastered": "Mae'r cardiau hyn wedi'u meistroli. Adolygiad achlysurol.",
+    "noCardsInBox": "Dim cardiau yn y blwch hwn.",
+    "moveOrAddCards": "Nid oes cardiau yn y blwch hwn. Symudwch gardiau o flychau eraill neu ychwanegwch gardiau newydd i'ch casgliad.",
+    "studying": "Astudio",
+    "allSubjects": "Pob Pwnc",
+    "previous": "Blaenorol",
+    "next": "Nesaf",
+    "correct": "Cywir",
+    "incorrect": "Anghywir",
+    "knowTheAnswer": "A oeddech chi'n gwybod yr ateb?",
+    "congratulations": "Llongyfarchiadau!",
+    "unlucky": "Anffodus!",
+    "correctAnswer": "Roeddech chi'n gywir! Symud ymlaen i Flwch {{box}}.",
+    "incorrectAnswer": "Mae hynny'n anghywir. Yr ateb cywir yw: {{answer}}",
+    "continue": "Parhau",
+    "moveToBox1": "Symud i Flwch 1",
+    "sessionComplete": "Sesiwn Wedi'i Chwblhau!",
+    "completedSession": "Rydych chi wedi cwblhau adolygu pob cerdyn yn y sesiwn hon.",
+    "returnToBoxView": "Dychwelyd i'r Golwg Blwch",
+    "noCardsToStudy": "Dim cardiau i'w hastudio",
+    "selectDifferent": "Nid oes cardiau yn y blwch hwn ar gyfer y pwnc/testun a ddewiswyd. Dewiswch flwch, pwnc, neu destun gwahanol, neu ychwanegwch fwy o gardiau i'ch casgliad."
+  },
+  "cardLock": {
+    "locked": "Cerdyn wedi'i Gloi Tan y Dyddiad Adolygu Nesaf",
+    "lockedMessage": "Mae'r cerdyn hwn eisoes wedi'i adolygu ac wedi'i gloi ar hyn o bryd. Bydd ar gael i'w adolygu ar {{date}}.",
+    "spacingMessage": "Mae'r bylchad hwn yn helpu i atgyfnerthu eich cof yn unol â thechnegau ailadrodd gydag ysbaid profedig.",
+    "gotIt": "Iawn"
+  },
+  "translation": {
+    "translateText": "Cyfieithu",
+    "hideTranslation": "Cuddio Cyfieithiad",
+    "showTranslation": "Dangos Cyfieithiad",
+    "translatedFrom": "Wedi'i gyfieithu o",
+    "error": "Methodd y cyfieithiad. Rhowch gynnig arall arni.",
+    "translating": "Yn cyfieithu...",
+    "originalText": "Testun Gwreiddiol",
+    "translatedText": "Testun wedi'i Gyfieithu",
+    "translationUnavailable": "Cyfieithiad ddim ar gael ar gyfer yr iaith hon",
+    "apiLimitError": "Terfyn API cyfieithu wedi'i gyrraedd. Rhowch gynnig arall arni'n hwyrach.",
+    "apiLimitReached": "Terfyn API wedi'i Gyrraedd"
+  },
+  "language": {
+    "selectLanguage": "Dewis Iaith",
+    "en": "Saesneg",
+    "cy": "Cymraeg", 
+    "ar": "Arabeg",
+    "es": "Sbaeneg",
+    "it": "Eidaleg",
+    "fr": "Ffrangeg",
+    "ja": "Japaneaidd",
+    "vi": "Fietnameg",
+    "zh": "Tsieinëeg"
+  }
+} 

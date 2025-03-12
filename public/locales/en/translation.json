@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "Flashcards",
+    "loading": "Loading...",
+    "returnToCardBank": "Return to Card Bank",
+    "cardBank": "Card Bank",
+    "spacedRepetition": "Spaced Repetition"
+  },
+  "navigation": {
+    "home": "Home",
+    "createCard": "Create Card",
+    "myCards": "My Cards",
+    "studyCards": "Study Cards",
+    "aiGenerator": "AI Generator"
+  },
+  "cardCreation": {
+    "createNewCard": "Create New Card",
+    "subject": "Subject",
+    "topic": "Topic",
+    "question": "Question",
+    "answer": "Answer",
+    "additionalInfo": "Additional Information",
+    "cardColor": "Card Color",
+    "saveCard": "Save Card",
+    "cancel": "Cancel",
+    "questionType": "Question Type",
+    "standard": "Standard",
+    "multipleChoice": "Multiple Choice",
+    "options": "Options (one per line, correct answer first)"
+  },
+  "cards": {
+    "noCards": "No Cards Found",
+    "createNewCards": "Create new cards or adjust your filters to see cards here.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this card?",
+    "yes": "Yes",
+    "no": "No",
+    "print": "Print",
+    "printAll": "Print All Cards"
+  },
+  "study": {
+    "box": "Box",
+    "reviewDaily": "Review daily.",
+    "reviewEvery2Days": "Review every 2 days.",
+    "reviewEvery3Days": "Review every 3 days.",
+    "reviewWeekly": "Review every 7 days.",
+    "mastered": "These cards are mastered. Occasional review.",
+    "noCardsInBox": "No cards in this box.",
+    "moveOrAddCards": "There are no cards in this box. Move cards from other boxes or add new cards to your collection.",
+    "studying": "Studying",
+    "allSubjects": "All Subjects",
+    "previous": "Previous",
+    "next": "Next",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "knowTheAnswer": "Did you know the answer?",
+    "congratulations": "Congratulations!",
+    "unlucky": "Unlucky!",
+    "correctAnswer": "You got that right! Moving up to Box {{box}}.",
+    "incorrectAnswer": "That's incorrect. The correct answer is: {{answer}}",
+    "continue": "Continue",
+    "moveToBox1": "Move to Box 1",
+    "sessionComplete": "Session Complete!",
+    "completedSession": "You've completed reviewing all cards in this session.",
+    "returnToBoxView": "Return to Box View",
+    "noCardsToStudy": "No cards to study",
+    "selectDifferent": "There are no cards in this box for the selected subject/topic. Please select a different box, subject, or topic, or add more cards to your collection."
+  },
+  "cardLock": {
+    "locked": "Card Locked Until Next Review Date",
+    "lockedMessage": "This card has already been reviewed and is currently locked. It will be available for review on {{date}}.",
+    "spacingMessage": "This spacing helps reinforce your memory according to proven spaced repetition techniques.",
+    "gotIt": "Got it"
+  },
+  "translation": {
+    "translateText": "Translate",
+    "hideTranslation": "Hide Translation",
+    "showTranslation": "Show Translation",
+    "translatedFrom": "Translated from",
+    "error": "Translation failed. Please try again.",
+    "translating": "Translating...",
+    "originalText": "Original Text",
+    "translatedText": "Translated Text",
+    "translationUnavailable": "Translation unavailable for this language",
+    "apiLimitError": "Translation API limit reached. Please try again later.",
+    "apiLimitReached": "API Limit Reached"
+  },
+  "language": {
+    "selectLanguage": "Select Language",
+    "en": "English",
+    "cy": "Welsh", 
+    "ar": "Arabic",
+    "es": "Spanish",
+    "it": "Italian",
+    "fr": "French",
+    "ja": "Japanese",
+    "vi": "Vietnamese",
+    "zh": "Chinese"
+  }
+} 

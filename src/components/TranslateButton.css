@@ -1,0 +1,182 @@
+.translate-container {
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.translate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #333;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 180px;
+}
+
+.translate-btn:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.translate-btn.active {
+  background-color: #e3f2fd;
+  border-color: #90caf9;
+}
+
+.translate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.translate-btn.api-limit-reached {
+  background-color: #ffebee;
+  border-color: #ffcdd2;
+  color: #c62828;
+  opacity: 0.8;
+}
+
+.translate-icon {
+  font-size: 1rem;
+}
+
+.translating-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.translating-indicator .dot-1,
+.translating-indicator .dot-2,
+.translating-indicator .dot-3 {
+  animation: pulse 1s infinite;
+  animation-delay: 0s;
+  margin: 0 2px;
+}
+
+.translating-indicator .dot-2 {
+  animation-delay: 0.2s;
+}
+
+.translating-indicator .dot-3 {
+  animation-delay: 0.4s;
+}
+
+.translated-content {
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.9rem;
+  color: #333;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.3s ease-in;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.translation-label {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.translation-text {
+  line-height: 1.4;
+}
+
+.translate-error {
+  color: #d32f2f;
+  margin-top: 5px;
+  font-size: 0.85rem;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Adjust for RTL languages */
+[dir="rtl"] .translate-btn {
+  flex-direction: row-reverse;
+}
+
+/* Smaller screens */
+@media (max-width: 600px) {
+  .translate-btn {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+  
+  .translated-content {
+    font-size: 0.85rem;
+    max-width: 100%;
+  }
+  
+  .translate-text {
+    display: none;
+  }
+  
+  .translate-btn {
+    max-width: 40px;
+    padding: 6px;
+  }
+  
+  .translate-btn.active .translate-text {
+    display: inline;
+  }
+  
+  .translate-btn.active {
+    max-width: 160px;
+    padding: 6px 12px;
+  }
+}
+
+/* Card-specific adjustments */
+.card-preview .translate-container {
+  margin-top: 5px;
+}
+
+.card-preview .translate-btn {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  max-width: 120px;
+}
+
+.card-preview .translated-content {
+  font-size: 0.8rem;
+  padding: 8px;
+  max-width: 100%;
+}
+
+.study-card .translate-container {
+  margin-top: 15px;
+}
+
+.flashcard .translate-container {
+  margin-top: 8px;
+}
+
+.flashcard-back .translate-container {
+  margin-top: 15px;
+} 

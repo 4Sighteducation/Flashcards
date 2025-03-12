@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "Cartes Flash",
+    "loading": "Chargement...",
+    "returnToCardBank": "Retour à la Banque de Cartes",
+    "cardBank": "Banque de Cartes",
+    "spacedRepetition": "Répétition Espacée"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "createCard": "Créer une Carte",
+    "myCards": "Mes Cartes",
+    "studyCards": "Étudier les Cartes",
+    "aiGenerator": "Générateur IA"
+  },
+  "cardCreation": {
+    "createNewCard": "Créer une Nouvelle Carte",
+    "subject": "Matière",
+    "topic": "Sujet",
+    "question": "Question",
+    "answer": "Réponse",
+    "additionalInfo": "Informations Supplémentaires",
+    "cardColor": "Couleur de la Carte",
+    "saveCard": "Enregistrer la Carte",
+    "cancel": "Annuler",
+    "questionType": "Type de Question",
+    "standard": "Standard",
+    "multipleChoice": "Choix Multiple",
+    "options": "Options (une par ligne, réponse correcte en premier)"
+  },
+  "cards": {
+    "noCards": "Aucune Carte Trouvée",
+    "createNewCards": "Créez de nouvelles cartes ou ajustez vos filtres pour voir les cartes ici.",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette carte ?",
+    "yes": "Oui",
+    "no": "Non",
+    "print": "Imprimer",
+    "printAll": "Imprimer Toutes les Cartes"
+  },
+  "study": {
+    "box": "Boîte",
+    "reviewDaily": "Réviser quotidiennement.",
+    "reviewEvery2Days": "Réviser tous les 2 jours.",
+    "reviewEvery3Days": "Réviser tous les 3 jours.",
+    "reviewWeekly": "Réviser toutes les semaines.",
+    "mastered": "Ces cartes sont maîtrisées. Révision occasionnelle.",
+    "noCardsInBox": "Aucune carte dans cette boîte.",
+    "moveOrAddCards": "Il n'y a pas de cartes dans cette boîte. Déplacez des cartes d'autres boîtes ou ajoutez de nouvelles cartes à votre collection.",
+    "studying": "En cours d'étude",
+    "allSubjects": "Toutes les Matières",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "knowTheAnswer": "Connaissiez-vous la réponse ?",
+    "congratulations": "Félicitations !",
+    "unlucky": "Dommage !",
+    "correctAnswer": "C'est correct ! Passage à la Boîte {{box}}.",
+    "incorrectAnswer": "C'est incorrect. La bonne réponse est : {{answer}}",
+    "continue": "Continuer",
+    "moveToBox1": "Déplacer vers la Boîte 1",
+    "sessionComplete": "Session Terminée !",
+    "completedSession": "Vous avez terminé la révision de toutes les cartes de cette session.",
+    "returnToBoxView": "Retour à la Vue des Boîtes",
+    "noCardsToStudy": "Pas de cartes à étudier",
+    "selectDifferent": "Il n'y a pas de cartes dans cette boîte pour la matière/sujet sélectionné. Veuillez sélectionner une boîte, une matière ou un sujet différent, ou ajouter plus de cartes à votre collection."
+  },
+  "cardLock": {
+    "locked": "Carte Verrouillée Jusqu'à la Prochaine Date de Révision",
+    "lockedMessage": "Cette carte a déjà été révisée et est actuellement verrouillée. Elle sera disponible pour révision le {{date}}.",
+    "spacingMessage": "Cet espacement aide à renforcer votre mémoire selon des techniques de répétition espacée éprouvées.",
+    "gotIt": "Compris"
+  },
+  "translation": {
+    "translateText": "Traduire",
+    "hideTranslation": "Masquer la Traduction",
+    "showTranslation": "Afficher la Traduction",
+    "translatedFrom": "Traduit de",
+    "error": "Échec de la traduction. Veuillez réessayer.",
+    "translating": "Traduction en cours...",
+    "originalText": "Texte Original",
+    "translatedText": "Texte Traduit",
+    "translationUnavailable": "Traduction non disponible pour cette langue",
+    "apiLimitError": "Limite de l'API de traduction atteinte. Veuillez réessayer plus tard.",
+    "apiLimitReached": "Limite API Atteinte"
+  },
+  "language": {
+    "selectLanguage": "Sélectionner la Langue",
+    "en": "Anglais",
+    "cy": "Gallois", 
+    "ar": "Arabe",
+    "es": "Espagnol",
+    "it": "Italien",
+    "fr": "Français",
+    "ja": "Japonais",
+    "vi": "Vietnamien",
+    "zh": "Chinois"
+  }
+} 

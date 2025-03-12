@@ -1,7 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "./LanguageSelector";
 import "./Header.css";
 
 const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
+  const { t } = useTranslation();
+  
   return (
     <header className="app-header">
       <div className="header-logo">
@@ -10,7 +14,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           alt="Vespa Academy Logo"
           className="logo"
         />
-        <h1>Flashcard App</h1>
+        <h1>{t('app.title')}</h1>
       </div>
 
       <div className="header-nav">
@@ -18,7 +22,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           className={`nav-button ${currentView === "cardBank" ? "active" : ""}`}
           onClick={() => onViewChange("cardBank")}
         >
-          Card Bank
+          {t('app.cardBank')}
         </button>
         <button
           className={`nav-button ${
@@ -26,7 +30,7 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           }`}
           onClick={() => onViewChange("createCard")}
         >
-          Create Card
+          {t('navigation.createCard')}
         </button>
         <button
           className={`nav-button ${
@@ -34,13 +38,15 @@ const Header = ({ userInfo, currentView, onViewChange, onSave, isSaving }) => {
           }`}
           onClick={() => onViewChange("spacedRepetition")}
         >
-          Spaced Repetition
+          {t('app.spacedRepetition')}
         </button>
       </div>
 
       <div className="header-actions">
+        <LanguageSelector />
+        
         <button className="save-button" onClick={onSave} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Cards"}
+          {isSaving ? t('app.loading') : t('cardCreation.saveCard')}
         </button>
 
         {userInfo.email && (
