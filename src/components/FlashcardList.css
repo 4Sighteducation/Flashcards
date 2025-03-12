@@ -18,55 +18,53 @@
 }
 
 .subject-header {
-  padding: 15px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  transition: background-color 0.3s;
   cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.3s;
 }
 
-.subject-header:hover {
-  background-color: #f0f0f0;
+.subject-content {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .subject-info {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  width: 100%;
 }
 
 .subject-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  margin-bottom: 6px;
+  margin: 10px 0;
+  font-size: 1.4em;
 }
 
 .subject-meta {
   display: flex;
-  gap: 8px;
-  margin-top: 0;
-  margin-bottom: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 5px;
 }
 
 .meta-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.85);
-  color: inherit;
-  padding: 4px 8px;
-  border-radius: 3px;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  font-size: 0.8em;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
-.exam-type {
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-.exam-board {
-  background-color: rgba(255, 255, 255, 0.9);
+.exam-type, .exam-board {
+  background-color: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .topic-group {
@@ -74,12 +72,21 @@
 }
 
 .topic-header {
-  padding: 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 15px;
+  margin: 8px 0;
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
+}
+
+.topic-content {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .topic-header:hover {
@@ -144,7 +151,62 @@
   font-size: 1rem;
 }
 
-/* Responsive design */
+/* Print button styles */
+.print-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.print-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.print-icon {
+  font-size: 1.2rem;
+}
+
+.print-all-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.print-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.print-all-btn:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+/* Mobile responsiveness */
 @media (max-width: 768px) {
   .flashcard-list {
     flex-direction: column;
@@ -154,28 +216,18 @@
   }
 
   .subject-column {
-    min-width: 100%;
-    max-width: 100%;
     width: 100%;
-    margin: 0 0 8px 0;
   }
   
-  .topic-cards {
-    padding: 8px;
-    gap: 8px;
+  .subject-header, .topic-header {
+    flex-wrap: nowrap;
   }
-  
-  .flashcard {
-    width: 100%;
-    max-width: 100%;
-    margin: 5px 0;
+
+  .subject-meta {
+    margin-top: 5px;
   }
-  
-  .subject-header {
-    padding: 12px 10px;
-  }
-  
-  .topic-header {
-    padding: 8px 10px;
+
+  .print-all-container {
+    justify-content: center;
   }
 }

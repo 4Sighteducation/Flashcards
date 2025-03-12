@@ -174,7 +174,9 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   const handleFlip = (e) => {
     // Don't flip if clicking on buttons or controls
     if (
-      e.target.closest('.button-container') || 
+      e.target.closest('.delete-btn') || 
+      e.target.closest('.color-btn') || 
+      e.target.closest('.info-btn') || 
       e.target.closest('.delete-confirm') || 
       e.target.closest('.color-picker-container')
     ) {
@@ -262,7 +264,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <button onClick={cancelDelete} className="cancel-btn">No</button>
               </div>
             ) : (
-              <div className="button-container">
+              <>
                 <button 
                   className="delete-btn" 
                   onClick={handleDeleteClick}
@@ -288,7 +290,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     ℹ️
                   </button>
                 )}
-              </div>
+              </>
             )}
             
             {showColorPicker && (

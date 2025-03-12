@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Flashcard from "./Flashcard";
+import PrintModal from "./PrintModal";
 import "./FlashcardList.css";
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // State to track expanded topics
   const [expandedTopics, setExpandedTopics] = useState({});
+  // State for print modal
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [cardsToPrint, setCardsToPrint] = useState([]);
+  const [printTitle, setPrintTitle] = useState("");
   
   // Group cards by subject and topic
   const groupedCards = cards.reduce((acc, card) => {
@@ -94,7 +99,10 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     const mostCommonBoard = Object.entries(boardCount)
       .sort((a, b) => b[1] - a[1])
       .map(entry => entry[0])[0] || '';
-      
+
+    // Log for debugging
+    console.log(`Subject: ${subject}, Type: ${mostCommonType}, Board: ${mostCommonBoard}`);
+    
     return { examType: mostCommonType, examBoard: mostCommonBoard };
   };
   
@@ -122,6 +130,32 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     return formatDate(earliestDate);
   };
 
+  // Open print modal for a specific set of cards
+  const openPrintModal = (cardsForPrinting, title) => {
+    setCardsToPrint(cardsForPrinting);
+    setPrintTitle(title);
+    setPrintModalOpen(true);
+  };
+
+  // Print all cards
+  const handlePrintAllCards = (e) => {
+    e.stopPropagation(); // Prevent toggling the subject expansion
+    openPrintModal(cards, "All Flashcards");
+  };
+
+  // Print subject cards
+  const handlePrintSubject = (subject, e) => {
+    e.stopPropagation(); // Prevent toggling the subject expansion
+    const subjectCards = Object.values(groupedCards[subject]).flat();
+    openPrintModal(subjectCards, subject);
+  };
+
+  // Print topic cards
+  const handlePrintTopic = (subject, topic, e) => {
+    e.stopPropagation(); // Prevent toggling the topic expansion
+    openPrintModal(groupedCards[subject][topic], `${subject} - ${topic}`);
+  };
+
   // If no cards, show empty state
   if (cards.length === 0) {
     return (
@@ -134,6 +168,20 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
 
   return (
     <div className="flashcard-list">
+      {printModalOpen && (
+        <PrintModal 
+          cards={cardsToPrint} 
+          title={printTitle} 
+          onClose={() => setPrintModalOpen(false)} 
+        />
+      )}
+      
+      <div className="print-all-container">
+        <button className="print-all-btn" onClick={handlePrintAllCards}>
+          <span className="print-icon">🖨️</span> Print All Cards
+        </button>
+      </div>
+
       {Object.keys(groupedCards).map((subject) => {
         // Get subject color for styling
         const subjectCards = Object.values(groupedCards[subject]).flat();
@@ -145,7 +193,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           <div key={subject} className="subject-column">
             <div 
               className="subject-header"
-              onClick={() => toggleExpand(subject)}
               style={{ 
                 boxShadow: `0 0 8px ${subjectColor}`,
                 borderBottom: `1px solid ${subjectColor}`,
@@ -154,19 +201,28 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                 position: 'relative'
               }}
             >
-              <div className="subject-info">
-                <h2>{subject}</h2>
-                <div className="subject-meta">
-                  {examType && <span className="meta-tag exam-type">{examType}</span>}
-                  {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
+              <div className="subject-content" onClick={() => toggleExpand(subject)}>
+                <div className="subject-info">
+                  <h2>{subject}</h2>
+                  <div className="subject-meta">
+                    {examType && <span className="meta-tag exam-type">{examType}</span>}
+                    {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
+                  </div>
                 </div>
+                <span className="card-count">
+                  ({Object.values(groupedCards[subject]).flat().length} cards)
+                </span>
+                <span className="expand-icon">
+                  {expandedTopics[subject] ? '▼' : '▶'}
+                </span>
               </div>
-              <span className="card-count">
-                ({Object.values(groupedCards[subject]).flat().length} cards)
-              </span>
-              <span className="expand-icon">
-                {expandedTopics[subject] ? '▼' : '▶'}
-              </span>
+              <button 
+                className="print-btn" 
+                onClick={(e) => handlePrintSubject(subject, e)}
+                style={{ color: textColor }}
+              >
+                <span className="print-icon">🖨️</span>
+              </button>
             </div>
 
             {expandedTopics[subject] && Object.keys(groupedCards[subject]).map((topic) => {
@@ -183,18 +239,26 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                       backgroundColor: topicColor,
                       color: textColor 
                     }}
-                    onClick={() => toggleExpand(`${subject}-${topic}`)}
                   >
-                    <div className="topic-info">
-                      <h3>{topic}</h3>
-                      {topicDate && <span className="topic-date">Created: {topicDate}</span>}
+                    <div className="topic-content" onClick={() => toggleExpand(`${subject}-${topic}`)}>
+                      <div className="topic-info">
+                        <h3>{topic}</h3>
+                        {topicDate && <span className="topic-date">Created: {topicDate}</span>}
+                      </div>
+                      <span className="card-count">
+                        ({groupedCards[subject][topic].length} cards)
+                      </span>
+                      <span className="expand-icon">
+                        {expandedTopics[`${subject}-${topic}`] ? '▼' : '▶'}
+                      </span>
                     </div>
-                    <span className="card-count">
-                      ({groupedCards[subject][topic].length} cards)
-                    </span>
-                    <span className="expand-icon">
-                      {expandedTopics[`${subject}-${topic}`] ? '▼' : '▶'}
-                    </span>
+                    <button 
+                      className="print-btn" 
+                      onClick={(e) => handlePrintTopic(subject, topic, e)}
+                      style={{ color: textColor }}
+                    >
+                      <span className="print-icon">🖨️</span>
+                    </button>
                   </div>
 
                   {expandedTopics[`${subject}-${topic}`] && (
