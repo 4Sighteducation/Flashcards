@@ -852,15 +852,46 @@ Use this format for different question types:
             back: `Explanation: ${card.explanation}`
           };
         } else if (formData.questionType === "multiple_choice") {
+          // Clean all options and correct answer of any existing prefixes
+          const cleanedOptions = card.options.map(option => 
+            option.replace(/^[a-d]\)\s*/i, '').trim()
+          );
+          
+          let correctAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '').trim();
+          
+          // Find the index of the correct answer in the options
+          let correctIndex = cleanedOptions.findIndex(option => 
+            option.toLowerCase() === correctAnswer.toLowerCase()
+          );
+          
+          // If match not found, try a more flexible comparison
+          if (correctIndex === -1) {
+            correctIndex = cleanedOptions.findIndex(option => 
+              option.toLowerCase().includes(correctAnswer.toLowerCase()) || 
+              correctAnswer.toLowerCase().includes(option.toLowerCase())
+            );
+          }
+          
+          // If still not found, default to the first option
+          if (correctIndex === -1) {
+            console.warn("Could not match correct answer to an option, defaulting to first option");
+            correctIndex = 0;
+            correctAnswer = cleanedOptions[0];
+          }
+          
+          // Get the letter for this index (a, b, c, d)
+          const letter = String.fromCharCode(97 + correctIndex);
+          
           return {
             ...baseCard,
             question: card.question,
-            options: card.options,
-            correctAnswer: card.correctAnswer,
+            options: cleanedOptions, // Use the cleaned options
+            correctAnswer: correctAnswer, // Use the cleaned correct answer
+            correctIndex: correctIndex, // Store the index for future reference
             detailedAnswer: card.detailedAnswer,
             additionalInfo: card.detailedAnswer, // Add to additionalInfo field for info modal
             front: card.question,
-            back: `Correct Answer: ${card.correctAnswer}` // Remove detailed answer from back
+            back: `Correct Answer: ${letter}) ${correctAnswer}` // Format with letter prefix
           };
         } else if (formData.questionType === "short_answer" || formData.questionType === "essay") {
           // Create key points as bullet points if they exist
