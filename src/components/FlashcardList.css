@@ -57,8 +57,8 @@
 .meta-tag {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
-  font-size: 0.85em;
+  padding: 6px 12px;
+  font-size: 0.9em;
   border-radius: 4px;
   white-space: nowrap;
   font-weight: bold;
@@ -67,18 +67,14 @@
 }
 
 .exam-type, .exam-board {
-  background-color: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   position: relative;
   z-index: 5;
 }
 
 .exam-type-default, .exam-board-default {
-  background-color: rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  opacity: 0.8;
-  position: relative;
-  z-index: 5;
+  display: none;
 }
 
 .topic-group {
@@ -251,21 +247,49 @@
   }
 
   .topic-cards {
-    min-height: 400px;
-    max-height: none;
-    overflow-y: auto;
+    height: auto;
+    min-height: 350px;
+    max-height: 80vh;
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .flashcard {
-    width: 100% !important;
-    margin: 0 0 10px 0 !important;
-    min-height: 200px;
+    width: 95% !important;
+    margin: 0 0 15px 0 !important;
+    min-height: 250px;
+    max-width: 500px;
+  }
+
+  .topic-cards::-webkit-scrollbar {
+    width: 6px;
+    background-color: rgba(0,0,0,0.05);
+  }
+  
+  .topic-cards::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
   }
 
   .print-all-container {
     justify-content: center;
     margin-bottom: 10px;
+  }
+  
+  .topic-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .expanded-topic {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 350px;
   }
 }

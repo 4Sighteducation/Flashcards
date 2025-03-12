@@ -68,85 +68,25 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     return brightness > 120 ? '#000000' : '#ffffff';
   };
 
-  // Function to get the most common exam type and board for a subject
+  // Function to get exam type and board directly from the first card in a subject
   const getExamInfo = (subject) => {
     try {
       const cards = Object.values(groupedCards[subject]).flat();
+      if (cards.length === 0) return { examType: '', examBoard: '' };
       
-      // Get all exam types and boards from all cards in the subject
-      const examTypes = cards
-        .map(card => {
-          // Check all possible property names
-          return card.examType || card.type || card.courseType || card.course_type || '';
-        })
-        .filter(type => type); // Filter out empty values
+      // Get data directly from the first card
+      const firstCard = cards[0];
       
-      const examBoards = cards
-        .map(card => {
-          // Check all possible property names
-          return card.examBoard || card.board || '';
-        })
-        .filter(board => board); // Filter out empty values
+      // Extract exam type and board, using direct properties only
+      const examType = firstCard.examType || firstCard.courseType || '';
+      const examBoard = firstCard.examBoard || '';
       
-      // Use the most common values if available
-      let examType = '';
-      let examBoard = '';
-      
-      if (examTypes.length > 0) {
-        // Count occurrences of each type
-        const typeCounts = {};
-        examTypes.forEach(type => {
-          typeCounts[type] = (typeCounts[type] || 0) + 1;
-        });
-        // Get the most common type
-        examType = Object.entries(typeCounts)
-          .sort((a, b) => b[1] - a[1])[0][0];
-      }
-      
-      if (examBoards.length > 0) {
-        // Count occurrences of each board
-        const boardCounts = {};
-        examBoards.forEach(board => {
-          boardCounts[board] = (boardCounts[board] || 0) + 1;
-        });
-        // Get the most common board
-        examBoard = Object.entries(boardCounts)
-          .sort((a, b) => b[1] - a[1])[0][0];
-      }
-      
-      // If we're still missing metadata, set default values based on subject name
-      if (!examType) {
-        // Set default exam types based on subject
-        if (subject.includes('Studies') || subject.includes('Theatre')) {
-          examType = 'A-Level';
-        } else if (subject === 'Biology' || subject === 'Chemistry' || subject === 'Physics') {
-          examType = 'GCSE';
-        } else {
-          examType = 'General'; // Only use "General" as a last resort
-        }
-      }
-      
-      if (!examBoard) {
-        // Set default exam boards based on subject
-        if (subject.includes('Theatre') || subject.includes('Drama')) {
-          examBoard = 'AQA';
-        } else if (subject === 'Biology' || subject === 'Chemistry') {
-          examBoard = 'OCR';
-        } else if (subject === 'Physics') {
-          examBoard = 'Edexcel';
-        } else {
-          examBoard = 'General'; // Only use "General" as a last resort
-        }
-      }
-      
-      console.log(`Metadata for ${subject}: Type=${examType}, Board=${examBoard}`);
-      console.log(`Found exam types: ${examTypes.join(', ')}`);
-      console.log(`Found exam boards: ${examBoards.join(', ')}`);
+      console.log(`Subject ${subject}: Using direct values - Type=${examType}, Board=${examBoard}`);
       
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
-      return { examType: 'General', examBoard: 'General' };
+      return { examType: '', examBoard: '' };
     }
   };
   
@@ -251,20 +191,12 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               <div className="subject-content" onClick={() => toggleExpand(subject)}>
                 <div className="subject-info">
                   <h2>{subject}</h2>
-                  {/* Only show metadata if it's not 'General' */}
-                  <div className="subject-meta">
-                    {examType && examType !== 'General' ? (
-                      <span className="meta-tag exam-type">{examType}</span>
-                    ) : (
-                      <span className="meta-tag exam-type-default">Course</span>
-                    )}
-                    
-                    {examBoard && examBoard !== 'General' ? (
-                      <span className="meta-tag exam-board">{examBoard}</span>
-                    ) : (
-                      <span className="meta-tag exam-board-default">Board</span>
-                    )}
-                  </div>
+                  {(examType || examBoard) && (
+                    <div className="subject-meta">
+                      {examType && <span className="meta-tag exam-type">{examType}</span>}
+                      {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
+                    </div>
+                  )}
                 </div>
                 <span className="card-count">
                   ({Object.values(groupedCards[subject]).flat().length} cards)
@@ -313,7 +245,7 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                   </div>
 
                   {expandedTopics[`${subject}-${topic}`] && (
-                    <div className="topic-cards">
+                    <div className="topic-cards expanded-topic">
                       {groupedCards[subject][topic].map((card) => (
                         <Flashcard
                           key={card.id}
