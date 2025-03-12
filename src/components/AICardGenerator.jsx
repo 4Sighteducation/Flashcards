@@ -1581,6 +1581,42 @@ Use this format for different question types:
     );
   };
 
+  // Render save confirmation dialog
+  const renderSaveConfirmation = () => {
+    if (!showSaveConfirmation) return null;
+    
+    return (
+      <div className="save-confirmation-overlay">
+        <div className="save-confirmation-dialog">
+          <h4>Save Topic List?</h4>
+          <p>Would you like to save this topic list for future use?</p>
+          
+          <div className="confirmation-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => {
+                setShowSaveConfirmation(false);
+                setShowTopicModal(false);
+                handleNextStep();
+              }}
+            >
+              No, Skip
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={() => {
+                setShowSaveConfirmation(false);
+                setShowSaveTopicDialog(true);
+              }}
+            >
+              Yes, Save It
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="ai-card-generator">
       <div className="generator-header">
