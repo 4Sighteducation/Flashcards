@@ -7,6 +7,7 @@ const SubjectsList = ({
   onSelectSubject,
   getColorForSubject,
   updateColorMapping,
+  refreshSubjectAndTopicColors
 }) => {
   const [showColorEditor, setShowColorEditor] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
@@ -30,7 +31,15 @@ const SubjectsList = ({
   const applyColorChange = () => {
     if (editingSubject && selectedColor) {
       console.log(`Updating color for subject ${editingSubject} to ${selectedColor}`);
-      updateColorMapping(editingSubject, null, selectedColor, applyToAllTopics);
+      
+      if (applyToAllTopics) {
+        // Use the refresh function to update all topic colors
+        refreshSubjectAndTopicColors(editingSubject, selectedColor);
+      } else {
+        // Only update the subject's base color
+        updateColorMapping(editingSubject, null, selectedColor, false);
+      }
+      
       setShowColorEditor(false);
     }
   };
@@ -81,6 +90,16 @@ const SubjectsList = ({
             >
               <span>🎨</span>
             </button>
+            <button 
+              className="refresh-color-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                refreshSubjectAndTopicColors(subject, getColorForSubject(subject));
+              }}
+              title="Refresh all topic colors based on this subject's color"
+            >
+              <span>↻</span>
+            </button>
           </div>
         ))}
       </div>
@@ -111,6 +130,11 @@ const SubjectsList = ({
                 <span className="checkmark"></span>
                 Apply to all topics in this subject
               </label>
+              <p className="color-info">
+                {applyToAllTopics ? 
+                  "This will update all topic and card colors to different shades of the selected color." :
+                  "Only the subject color will be changed. Topic colors will remain the same."}
+              </p>
             </div>
             
             <div className="color-editor-actions">
@@ -138,7 +162,7 @@ const getContrastColor = (hexColor) => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
   // Return white for dark backgrounds, black for light backgrounds
-  return brightness >= 128 ? "#000000" : "#ffffff";
+  return brightness > 0.5 ? "#000000" : "#ffffff";
 };
 
 export default SubjectsList;

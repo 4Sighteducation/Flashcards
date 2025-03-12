@@ -237,6 +237,152 @@ function App() {
     [allCards, generateShade]
   );
 
+  // Function to refresh subject and topic colors
+  const refreshSubjectAndTopicColors = useCallback((subject, newColor) => {
+    // Ask for confirmation
+    if (!window.confirm(`This will update all topic and card colors for "${subject}" to different shades of the selected color. Continue?`)) {
+      return false;
+    }
+    
+    console.log(`Refreshing colors for subject ${subject} with base color ${newColor}`);
+    
+    // Get all topics for this subject
+    const topicsForSubject = allCards
+      .filter(card => (card.subject || "General") === subject)
+      .map(card => card.topic || "General");
+    
+    // Remove duplicates and sort
+    const uniqueTopics = [...new Set(topicsForSubject)].sort();
+    
+    if (uniqueTopics.length === 0) {
+      console.log(`No topics found for subject ${subject}`);
+      return false;
+    }
+    
+    console.log(`Found ${uniqueTopics.length} topics for subject ${subject}`);
+    
+    // Start by updating the subject color
+    setSubjectColorMapping(prevMapping => {
+      const newMapping = { ...prevMapping };
+      
+      // Create subject entry if it doesn't exist
+      if (!newMapping[subject]) {
+        newMapping[subject] = { base: newColor, topics: {} };
+      } else {
+        newMapping[subject].base = newColor;
+        
+        // Reset topics object
+        newMapping[subject].topics = {};
+      }
+      
+      // Generate new colors for each topic
+      uniqueTopics.forEach((topic, index) => {
+        // Skip the "General" topic - it will use the subject color
+        if (topic === "General") {
+          newMapping[subject].topics[topic] = newColor;
+          return;
+        }
+        
+        // Generate a shade of the base color for this topic
+        const topicColor = generateShade(newColor, index, Math.max(uniqueTopics.length, 5));
+        newMapping[subject].topics[topic] = topicColor;
+        
+        console.log(`Generated color for topic ${topic}: ${topicColor}`);
+      });
+      
+      return newMapping;
+    });
+    
+    // Now update all cards with this subject to use their topic colors
+    setAllCards(prevCards => {
+      return prevCards.map(card => {
+        if ((card.subject || "General") === subject) {
+          const topic = card.topic || "General";
+          // Wait for the state update to complete before accessing values
+          // Instead use calculated colors
+          let topicColor = newColor;
+          
+          if (topic !== "General") {
+            const topicIndex = uniqueTopics.indexOf(topic);
+            topicColor = generateShade(newColor, topicIndex, Math.max(uniqueTopics.length, 5));
+          }
+          
+          // Return updated card with new colors
+          return {
+            ...card,
+            cardColor: topicColor,
+            baseColor: newColor
+          };
+        }
+        return card;
+      });
+    });
+    
+    // Show confirmation to user
+    showStatus("Colors refreshed successfully", "success");
+    return true;
+  }, [allCards, generateShade, showStatus]);
+
+  // Generate a color for a subject or topic
+  const getColorForSubjectTopic = useCallback(
+    (subject, topic) => {
+      // Default color if nothing else works
+      const defaultColor = currentSubjectColor;
+
+      // Check if we have a color mapping for this subject
+      if (subjectColorMapping[subject]) {
+        // If there's a topic, try to get its specific color
+        if (
+          topic &&
+          subjectColorMapping[subject].topics &&
+          subjectColorMapping[subject].topics[topic]
+        ) {
+          return subjectColorMapping[subject].topics[topic];
+        } 
+        // If topic is not in mapping but we have a base color, generate a color
+        else if (topic && topic !== "General" && subjectColorMapping[subject].base) {
+          // Get all topics for this subject
+          const topicsForSubject = allCards
+            .filter(card => (card.subject || "General") === subject)
+            .map(card => card.topic || "General");
+          
+          // Remove duplicates and sort
+          const uniqueTopics = [...new Set(topicsForSubject)].sort();
+          
+          // Find index of this topic
+          const topicIndex = uniqueTopics.indexOf(topic);
+          
+          if (topicIndex !== -1) {
+            // Generate a shade and store it for future use
+            const shade = generateShade(
+              subjectColorMapping[subject].base, 
+              topicIndex, 
+              Math.max(uniqueTopics.length, 5)
+            );
+            
+            // Store this for next time
+            setSubjectColorMapping(prev => {
+              const newMapping = { ...prev };
+              if (!newMapping[subject].topics) {
+                newMapping[subject].topics = {};
+              }
+              newMapping[subject].topics[topic] = shade;
+              return newMapping;
+            });
+            
+            return shade;
+          }
+        }
+
+        // Otherwise return the base subject color
+        return subjectColorMapping[subject].base;
+      }
+
+      return defaultColor;
+    },
+    [subjectColorMapping, currentSubjectColor, generateShade, allCards]
+  );
+
   // Save data to localStorage fallback - dependent on state only
   const saveToLocalStorage = useCallback(() => {
     try {
@@ -681,32 +827,6 @@ function App() {
     return filtered;
   }, [allCards, selectedSubject, selectedTopic]);
 
-  // Generate a color for a subject or topic
-  const getColorForSubjectTopic = useCallback(
-    (subject, topic) => {
-      // Default color if nothing else works
-      const defaultColor = currentSubjectColor;
-
-      // Check if we have a color mapping for this subject
-      if (subjectColorMapping[subject]) {
-        // If there's a topic, try to get its specific color
-        if (
-          topic &&
-          subjectColorMapping[subject].topics &&
-          subjectColorMapping[subject].topics[topic]
-        ) {
-          return subjectColorMapping[subject].topics[topic];
-        }
-
-        // Otherwise return the base subject color
-        return subjectColorMapping[subject].base;
-      }
-
-      return defaultColor;
-    },
-    [subjectColorMapping, currentSubjectColor]
-  );
-
   // Auto-save periodically
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -945,6 +1065,7 @@ function App() {
                   getColorForSubjectTopic(subject)
                 }
                 updateColorMapping={updateColorMapping}
+                refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
               />
 
               {selectedSubject && (

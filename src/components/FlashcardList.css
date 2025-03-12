@@ -14,18 +14,28 @@
   border-radius: 8px;
   overflow: hidden;
   background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .subject-header {
-  padding: 10px 15px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.subject-header:hover {
+  background-color: #e8e8e8;
 }
 
 .subject-header h2 {
   margin: 0;
   font-size: 1.2rem;
+  flex-grow: 1;
 }
 
 .topic-group {
@@ -33,23 +43,44 @@
 }
 
 .topic-header {
-  padding: 8px 15px;
+  padding: 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.topic-header:hover {
+  filter: brightness(95%);
 }
 
 .topic-header h3 {
   margin: 0;
   font-size: 1rem;
+  flex-grow: 1;
+}
+
+.card-count {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-left: 8px;
+}
+
+.expand-icon {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  transition: transform 0.2s;
 }
 
 .topic-cards {
   display: flex;
   flex-wrap: wrap;
-  padding: 10px;
-  gap: 10px;
+  padding: 15px;
+  gap: 15px;
   justify-content: center;
+  background-color: #fafafa;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .empty-card-bank {
