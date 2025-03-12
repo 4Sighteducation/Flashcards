@@ -246,11 +246,7 @@ function App() {
 
   // Function to refresh subject and topic colors
   const refreshSubjectAndTopicColors = useCallback((subject, newColor) => {
-    // Ask for confirmation
-    if (!window.confirm(`This will update all topic and card colors for "${subject}" to different shades of the selected color. Continue?`)) {
-      return false;
-    }
-    
+    // Remove the confirmation dialog since we'll handle that in the SubjectsList component
     console.log(`Refreshing colors for subject ${subject} with base color ${newColor}`);
     
     // Get all topics for this subject

@@ -144,9 +144,14 @@
 .generator-controls {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
-  padding-top: 20px;
+  padding: 15px 20px;
+  background-color: white;
   border-top: 1px solid #eee;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }
 
 .back-button,

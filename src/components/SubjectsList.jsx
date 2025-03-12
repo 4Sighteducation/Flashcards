@@ -13,6 +13,7 @@ const SubjectsList = ({
   const [editingSubject, setEditingSubject] = useState(null);
   const [selectedColor, setSelectedColor] = useState("");
   const [applyToAllTopics, setApplyToAllTopics] = useState(false);
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
   
   const brightColors = [
     "#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231", 
@@ -33,15 +34,72 @@ const SubjectsList = ({
       console.log(`Updating color for subject ${editingSubject} to ${selectedColor}`);
       
       if (applyToAllTopics) {
-        // Use the refresh function to update all topic colors
-        refreshSubjectAndTopicColors(editingSubject, selectedColor);
+        // Show the confirmation modal instead of directly refreshing
+        setShowRefreshModal(true);
       } else {
         // Only update the subject's base color
         updateColorMapping(editingSubject, null, selectedColor, false);
+        setShowColorEditor(false);
       }
-      
-      setShowColorEditor(false);
     }
+  };
+  
+  const confirmRefreshColors = () => {
+    // User confirmed, now apply the refresh
+    refreshSubjectAndTopicColors(editingSubject, selectedColor);
+    setShowRefreshModal(false);
+    setShowColorEditor(false);
+  };
+  
+  const getContrastColor = (hexColor) => {
+    if (!hexColor) return "#000000";
+    
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Calculate brightness using YIQ formula
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // Return white for dark backgrounds, black for light backgrounds
+    return brightness > 120 ? '#000000' : '#ffffff';
+  };
+
+  // Render the refresh color confirmation modal
+  const renderRefreshColorModal = () => {
+    if (!showRefreshModal) return null;
+    
+    return (
+      <div className="modal-overlay" onClick={() => setShowRefreshModal(false)}>
+        <div className="modal-content color-refresh-modal" onClick={(e) => e.stopPropagation()}>
+          <h3>Refresh Topic Colors</h3>
+          <p>This will update all topic and card colors for "{editingSubject}" to different shades of the selected color.</p>
+          
+          <div className="color-preview" style={{ backgroundColor: selectedColor }}>
+            <span style={{ color: getContrastColor(selectedColor) }}>Preview</span>
+          </div>
+          
+          <div className="modal-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => setShowRefreshModal(false)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={confirmRefreshColors}
+            >
+              Apply Colors
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (subjects.length === 0) {
@@ -55,6 +113,8 @@ const SubjectsList = ({
 
   return (
     <div className="subjects-list">
+      {renderRefreshColorModal()}
+      
       <h3>Subjects</h3>
       <div className="subjects-container">
         <button
@@ -146,24 +206,6 @@ const SubjectsList = ({
       )}
     </div>
   );
-};
-
-// Update the getContrastColor function to ensure better contrast even with dark colors
-const getContrastColor = (hexColor) => {
-  // Default to black if no color provided
-  if (!hexColor) return "#000000";
-
-  // Convert hex to RGB
-  const r = parseInt(hexColor.slice(1, 3), 16);
-  const g = parseInt(hexColor.slice(3, 5), 16);
-  const b = parseInt(hexColor.slice(5, 7), 16);
-
-  // Calculate brightness (YIQ formula)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-  // Return white for dark backgrounds, black for light backgrounds
-  // Using a lower threshold to ensure more text is white on dark backgrounds
-  return brightness > 128 ? "#000000" : "#ffffff";
 };
 
 export default SubjectsList;

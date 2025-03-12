@@ -215,12 +215,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         />
       )}
       
-      <div className="print-all-container">
-        <button className="print-all-btn" onClick={handlePrintAllCards}>
-          <span className="print-icon">🖨️</span> Print All Cards
-        </button>
-      </div>
-
       {Object.keys(groupedCards).map((subject) => {
         // Get subject color for styling
         const subjectCards = Object.values(groupedCards[subject]).flat();
