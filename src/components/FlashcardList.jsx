@@ -73,14 +73,46 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
     try {
       const cards = Object.values(groupedCards[subject]).flat();
       
-      // Get exam information from the first card's direct properties
-      // Assuming user selection is stored directly in the card properties
-      const firstCard = cards[0] || {};
+      // Get all exam types and boards from all cards in the subject
+      const examTypes = cards
+        .map(card => {
+          // Check all possible property names
+          return card.examType || card.type || card.courseType || card.course_type || '';
+        })
+        .filter(type => type); // Filter out empty values
       
-      // Look for specific properties for this subject's metadata
-      // Start with direct properties then fallback to defaults based on subject
-      let examType = firstCard.examType || firstCard.courseType || '';
-      let examBoard = firstCard.examBoard || '';
+      const examBoards = cards
+        .map(card => {
+          // Check all possible property names
+          return card.examBoard || card.board || '';
+        })
+        .filter(board => board); // Filter out empty values
+      
+      // Use the most common values if available
+      let examType = '';
+      let examBoard = '';
+      
+      if (examTypes.length > 0) {
+        // Count occurrences of each type
+        const typeCounts = {};
+        examTypes.forEach(type => {
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+        // Get the most common type
+        examType = Object.entries(typeCounts)
+          .sort((a, b) => b[1] - a[1])[0][0];
+      }
+      
+      if (examBoards.length > 0) {
+        // Count occurrences of each board
+        const boardCounts = {};
+        examBoards.forEach(board => {
+          boardCounts[board] = (boardCounts[board] || 0) + 1;
+        });
+        // Get the most common board
+        examBoard = Object.entries(boardCounts)
+          .sort((a, b) => b[1] - a[1])[0][0];
+      }
       
       // If we're still missing metadata, set default values based on subject name
       if (!examType) {
@@ -89,6 +121,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           examType = 'A-Level';
         } else if (subject === 'Biology' || subject === 'Chemistry' || subject === 'Physics') {
           examType = 'GCSE';
+        } else {
+          examType = 'General'; // Only use "General" as a last resort
         }
       }
       
@@ -100,15 +134,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
           examBoard = 'OCR';
         } else if (subject === 'Physics') {
           examBoard = 'Edexcel';
+        } else {
+          examBoard = 'General'; // Only use "General" as a last resort
         }
       }
       
-      console.log(`Direct metadata for ${subject}: Type=${examType}, Board=${examBoard}`);
+      console.log(`Metadata for ${subject}: Type=${examType}, Board=${examBoard}`);
+      console.log(`Found exam types: ${examTypes.join(', ')}`);
+      console.log(`Found exam boards: ${examBoards.join(', ')}`);
       
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
-      return { examType: '', examBoard: '' };
+      return { examType: 'General', examBoard: 'General' };
     }
   };
   
@@ -213,10 +251,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
               <div className="subject-content" onClick={() => toggleExpand(subject)}>
                 <div className="subject-info">
                   <h2>{subject}</h2>
-                  {/* Always show metadata section, even with placeholders if needed */}
+                  {/* Only show metadata if it's not 'General' */}
                   <div className="subject-meta">
-                    <span className="meta-tag exam-type">Type: {examType || 'General'}</span>
-                    <span className="meta-tag exam-board">Board: {examBoard || 'General'}</span>
+                    {examType && examType !== 'General' ? (
+                      <span className="meta-tag exam-type">{examType}</span>
+                    ) : (
+                      <span className="meta-tag exam-type-default">Course</span>
+                    )}
+                    
+                    {examBoard && examBoard !== 'General' ? (
+                      <span className="meta-tag exam-board">{examBoard}</span>
+                    ) : (
+                      <span className="meta-tag exam-board-default">Board</span>
+                    )}
                   </div>
                 </div>
                 <span className="card-count">
