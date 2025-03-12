@@ -9,7 +9,7 @@
   min-width: 300px;
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   overflow: hidden;
@@ -23,7 +23,7 @@
   align-items: center;
   padding: 15px;
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   transition: background-color 0.3s;
   cursor: pointer;
 }
@@ -82,7 +82,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
-  margin: 8px 0;
+  margin: 0;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -137,6 +137,8 @@
   justify-content: center;
   background-color: #fafafa;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+  max-height: 75vh;
+  overflow-y: auto;
 }
 
 .empty-card-bank {
@@ -223,6 +225,7 @@
 
   .subject-column {
     width: 100%;
+    margin-bottom: 10px;
   }
   
   .subject-header, .topic-header {
@@ -235,5 +238,11 @@
 
   .print-all-container {
     justify-content: center;
+  }
+  
+  .topic-cards {
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
