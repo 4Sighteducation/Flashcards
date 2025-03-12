@@ -77,6 +77,12 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [availableTopics, setAvailableTopics] = useState([]);
 
+  // New state for success modal
+  const [successModal, setSuccessModal] = useState({
+    show: false,
+    addedCards: []
+  });
+
   // Load saved topic lists from both localStorage and Knack on mount
   useEffect(() => {
     // Load from localStorage
@@ -946,17 +952,69 @@ Use this format for different question types:
     setGeneratedCards(prev => 
       prev.map(c => c.id === card.id ? {...c, added: true} : c)
     );
+    
+    // Show success modal with this card
+    setSuccessModal({
+      show: true,
+      addedCards: [card]
+    });
+    
+    // Auto-hide after 2 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+    }, 2000);
   };
 
   // Add all cards to the bank
   const handleAddAllCards = () => {
-    generatedCards.forEach(card => {
-      if (!card.added) {
-        onAddCard(card);
-      }
+    const unadded = generatedCards.filter(card => !card.added);
+    
+    if (unadded.length === 0) {
+      return; // No cards to add
+    }
+    
+    // Add all unadded cards
+    unadded.forEach(card => {
+      onAddCard(card);
     });
+    
     // Mark all cards as added
     setGeneratedCards(prev => prev.map(c => ({...c, added: true})));
+    
+    // Show success modal with all added cards
+    setSuccessModal({
+      show: true,
+      addedCards: unadded
+    });
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setSuccessModal(prev => ({...prev, show: false}));
+    }, 3000);
+  };
+  
+  // Modal to show successfully added cards
+  const renderSuccessModal = () => {
+    if (!successModal.show) return null;
+    
+    return (
+      <div className="success-modal-overlay">
+        <div className="success-modal">
+          <div className="success-icon">✓</div>
+          <h3>{successModal.addedCards.length} {successModal.addedCards.length === 1 ? 'Card' : 'Cards'} Added!</h3>
+          <div className="success-cards">
+            {successModal.addedCards.slice(0, 5).map(card => (
+              <div key={card.id} className="success-card-item" style={{backgroundColor: card.cardColor}}>
+                <span style={{color: getContrastColor(card.cardColor)}}>{card.front.substring(0, 40)}...</span>
+              </div>
+            ))}
+            {successModal.addedCards.length > 5 && (
+              <div className="success-more">+{successModal.addedCards.length - 5} more</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Generate new batch of cards
@@ -1262,8 +1320,8 @@ Use this format for different question types:
   // Step 7: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
     return (
-      <div className="step-content confirmation-step">
-        <h2>Confirm Your Selections</h2>
+      <div className="generator-step review-step">
+        <h2>Review and Generate Cards</h2>
         
         <div className="confirmation-details">
           <div className="confirmation-item">
@@ -1322,12 +1380,9 @@ Use this format for different question types:
           </div>
         ) : generatedCards.length > 0 ? (
           <>
-            <div className="generated-cards-actions">
-              <button className="primary-button" onClick={handleAddAllCards}>
-                Add All to Card Bank
-              </button>
+            <div className="generated-cards-actions top-actions">
               <button className="secondary-button" onClick={handleRegenerateCards}>
-                Regenerate Cards
+                <span className="button-icon">🔄</span> Regenerate Cards
               </button>
             </div>
             
@@ -1351,7 +1406,7 @@ Use this format for different question types:
                       onClick={() => handleAddCard(card)}
                       disabled={card.added}
                     >
-                      {card.added ? "Added" : "Add to Bank"}
+                      {card.added ? "Added ✓" : "Add to Bank"}
                     </button>
                   </div>
                   
@@ -1368,6 +1423,19 @@ Use this format for different question types:
                   />
                 </div>
               ))}
+            </div>
+            
+            <div className="generated-cards-actions bottom-actions">
+              <button 
+                className="primary-button add-all-button" 
+                onClick={handleAddAllCards}
+                disabled={generatedCards.every(card => card.added)}
+              >
+                <span className="button-icon">💾</span> Add All Cards to Bank
+              </button>
+              <p className="status-text">
+                {generatedCards.filter(card => card.added).length} of {generatedCards.length} cards added
+              </p>
             </div>
           </>
         ) : (
@@ -1388,6 +1456,7 @@ Use this format for different question types:
   return (
     <div className="ai-card-generator">
       {renderSaveTopicDialog()}
+      {renderSuccessModal()}
       
       <div className="generator-header">
         <h1>AI Card Generator</h1>

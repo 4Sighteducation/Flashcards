@@ -972,3 +972,138 @@
     padding: 20px;
   }
 }
+
+/* Success Modal */
+.success-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-modal {
+  width: 300px;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: scaleIn 0.3s ease;
+}
+
+.success-icon {
+  background-color: #4CAF50;
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30px;
+  margin: 0 auto 15px;
+}
+
+.success-modal h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.success-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.success-card-item {
+  padding: 8px;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.success-more {
+  text-align: center;
+  font-style: italic;
+  color: #777;
+  margin-top: 5px;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced button styling */
+.generated-cards-actions.bottom-actions {
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+.add-all-button {
+  font-size: 1.1rem;
+  padding: 12px 24px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.add-all-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.add-all-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.status-text {
+  margin-top: 10px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.generated-cards-actions.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+/* Make the "NEXT" button at the bottom more visible */
+.generator-step .step-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 15px 0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 5;
+  margin-top: 30px;
+}

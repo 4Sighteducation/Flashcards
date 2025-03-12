@@ -8,6 +8,7 @@ import SpacedRepetition from "./components/SpacedRepetition";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
+import PrintModal from './components/PrintModal';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 
 // API Keys and constants
@@ -92,6 +93,12 @@ function App() {
   // Status messages
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // PrintModal state
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [cardsToPrint, setCardsToPrint] = useState([]);
+  const [printTitle, setPrintTitle] = useState("");
+  const [cardCreationModalOpen, setCardCreationModalOpen] = useState(false);
 
   // User information
   const getUserInfo = useCallback(() => {
@@ -1010,6 +1017,19 @@ function App() {
     [auth, saveData]
   );
 
+  // Add the print modal function near other helper functions
+  const openPrintModal = (cardsForPrinting, title) => {
+    setCardsToPrint(cardsForPrinting);
+    setPrintTitle(title);
+    setPrintModalOpen(true);
+  };
+  
+  const handlePrintAllCards = () => {
+    // Use the filtered cards that are currently being shown
+    const cardsToDisplay = getFilteredCards();
+    openPrintModal(cardsToDisplay, "All Flashcards");
+  };
+
   // Show loading state
   if (loading) {
     return <LoadingSpinner message={loadingMessage} />;
@@ -1040,18 +1060,63 @@ function App() {
 
       {view === "cardBank" && (
         <div className="card-bank-view">
+          {printModalOpen && (
+            <PrintModal 
+              cards={cardsToPrint} 
+              title={printTitle} 
+              onClose={() => setPrintModalOpen(false)} 
+            />
+          )}
+          
+          {/* Card Creation Modal */}
+          {cardCreationModalOpen && (
+            <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
+                <h2>Create Flashcards</h2>
+                <div className="modal-options">
+                  <button 
+                    className="primary-button"
+                    onClick={() => {
+                      setCardCreationModalOpen(false);
+                      setView("aiGenerator");
+                    }}
+                  >
+                    <span className="button-icon">🤖</span> Generate Cards with AI
+                  </button>
+                  <div className="option-divider">or</div>
+                  <button 
+                    className="secondary-button"
+                    onClick={() => {
+                      setCardCreationModalOpen(false);
+                      setView("manualCreate");
+                    }}
+                  >
+                    <span className="button-icon">✍️</span> Create Cards Manually
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="bank-controls">
             <button
               className="primary-button"
-              onClick={() => setView("createCard")}
+              onClick={() => setCardCreationModalOpen(true)}
             >
-              Create New Card
+              <span className="button-icon">✏️</span> Create New Card
             </button>
             <button
               className="secondary-button"
               onClick={() => setView("spacedRepetition")}
             >
-              Start Spaced Repetition
+              <span className="button-icon">🧠</span> Start Spaced Repetition
+            </button>
+            <button
+              className="secondary-button print-all-btn"
+              onClick={handlePrintAllCards}
+            >
+              <span className="button-icon">🖨️</span> Print All Cards
             </button>
           </div>
 
@@ -1078,26 +1143,6 @@ function App() {
             </div>
           </div>
         </div>
-      )}
-
-      {view === "createCard" && (
-        <>
-          <div className="create-card-options">
-            <button 
-              className="primary-button"
-              onClick={() => setView("aiGenerator")}
-            >
-              Generate Cards with AI
-            </button>
-            <span className="or-divider">OR</span>
-            <button 
-              className="secondary-button"
-              onClick={() => setView("manualCreate")}
-            >
-              Create Cards Manually
-            </button>
-          </div>
-        </>
       )}
 
       {view === "manualCreate" && (

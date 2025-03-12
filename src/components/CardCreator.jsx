@@ -35,6 +35,13 @@ const CardCreator = ({
   // Custom color
   const [cardColor, setCardColor] = useState(currentColor);
 
+  // Add state for the refresh color modal
+  const [refreshColorModal, setRefreshColorModal] = useState({
+    show: false,
+    subject: null,
+    color: null
+  });
+
   // Update available topics when subject changes
   useEffect(() => {
     if (subject) {
@@ -72,6 +79,25 @@ const CardCreator = ({
     "#ADFF2F",
     "#DC143C",
   ];
+
+  // Add the getContrastColor function
+  const getContrastColor = (hexColor) => {
+    if (!hexColor) return "#000000";
+    
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(hexColor.substring(0, 2), 16);
+    const g = parseInt(hexColor.substring(2, 4), 16);
+    const b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Calculate brightness using YIQ formula
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // Return white for dark backgrounds, black for light backgrounds
+    return brightness > 120 ? '#000000' : '#ffffff';
+  };
 
   // Handle submit
   const handleSubmit = (e) => {
@@ -187,8 +213,93 @@ const CardCreator = ({
     setOptions(newOptions);
   };
 
+  // Add function to handle refreshing colors
+  const handleRefreshColors = (subject, color) => {
+    // Show the modal instead of using window.confirm
+    setRefreshColorModal({
+      show: true,
+      subject,
+      color
+    });
+  };
+
+  // Function to confirm and apply the color refresh
+  const confirmRefreshColors = () => {
+    const { subject, color } = refreshColorModal;
+    if (subject && color) {
+      console.log(`Applying color ${color} to all topics in ${subject}`);
+      updateColorMapping(subject, null, color, true);
+    }
+    // Close the modal
+    setRefreshColorModal({ show: false, subject: null, color: null });
+  };
+
+  // Render the refresh color modal
+  const renderRefreshColorModal = () => {
+    if (!refreshColorModal.show) return null;
+
+    return (
+      <div className="modal-overlay" onClick={() => setRefreshColorModal({ show: false, subject: null, color: null })}>
+        <div className="modal-content color-refresh-modal" onClick={(e) => e.stopPropagation()}>
+          <h3>Refresh Topic Colors</h3>
+          <p>This will update all topic and card colors for "{refreshColorModal.subject}" to different shades of the selected color.</p>
+          
+          <div className="color-preview" style={{ backgroundColor: refreshColorModal.color }}>
+            <span style={{ color: getContrastColor(refreshColorModal.color) }}>Preview</span>
+          </div>
+          
+          <div className="modal-actions">
+            <button 
+              className="secondary-button" 
+              onClick={() => setRefreshColorModal({ show: false, subject: null, color: null })}
+            >
+              Cancel
+            </button>
+            <button 
+              className="primary-button" 
+              onClick={confirmRefreshColors}
+            >
+              Apply Colors
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Update the color apply options section
+  const renderColorApplyOptions = () => {
+    return (
+      <div className="color-apply-options">
+        <label className="checkbox-container">
+          <input 
+            type="checkbox" 
+            id="applyToAllTopics"
+            onChange={(e) => {
+              // If checkbox is checked, update all topic colors for this subject
+              if (e.target.checked) {
+                const subjectToUpdate = newSubject || subject;
+                if (subjectToUpdate) {
+                  // Instead of directly applying, show the modal
+                  handleRefreshColors(subjectToUpdate, cardColor);
+                  
+                  // Reset the checkbox
+                  e.target.checked = false;
+                }
+              }
+            }}
+          />
+          <span className="checkmark"></span>
+          Apply this color to all topics in this subject
+        </label>
+      </div>
+    );
+  };
+
   return (
     <div className="card-creator">
+      {renderRefreshColorModal()}
+      
       <h2>Create New Flashcard</h2>
 
       <form onSubmit={handleSubmit}>
@@ -281,26 +392,7 @@ const CardCreator = ({
               ))}
             </div>
             
-            <div className="color-apply-options">
-              <label className="checkbox-container">
-                <input 
-                  type="checkbox" 
-                  id="applyToAllTopics"
-                  onChange={(e) => {
-                    // If checkbox is checked, update all topic colors for this subject
-                    if (e.target.checked) {
-                      const subjectToUpdate = newSubject || subject;
-                      if (subjectToUpdate) {
-                        console.log(`Applying color ${cardColor} to all topics in ${subjectToUpdate}`);
-                        updateColorMapping(subjectToUpdate, null, cardColor, true);
-                      }
-                    }
-                  }}
-                />
-                <span className="checkmark"></span>
-                Apply this color to all topics in this subject
-              </label>
-            </div>
+            {renderColorApplyOptions()}
           </div>
         </div>
 
