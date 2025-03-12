@@ -53,8 +53,9 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     topic: "",
     newTopic: "",
     numCards: 5,
-    questionType: "multiple_choice",
-    subjectColor: BRIGHT_COLORS[0]
+    questionType: "",
+    subjectColor: BRIGHT_COLORS[0],
+    generatedCards: []
   });
   
   // Processing states
@@ -725,7 +726,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       case 6: // Question Type
         return !!formData.questionType;
       case 7: // Color Selection
-        return !!formData.subjectColor;
+        return true; // Always allow proceeding from color selection since we have a default
       default:
         return true;
     }
@@ -1375,13 +1376,6 @@ Use this format for different question types:
   const renderTopicSelectionUI = () => {
     return (
       <div className="topic-selection-container">
-        <div className="selected-topic-display">
-          <label>Selected Topic:</label>
-          <div className="selected-topic">
-            {formData.topic ? formData.topic : "None selected"}
-          </div>
-        </div>
-        
         <button
           className="generate-topics-button"
           onClick={handleGenerateTopics}
