@@ -189,6 +189,9 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         const { examType, examBoard } = getExamInfo(subject);
         const textColor = getContrastColor(subjectColor);
         
+        // Debug exam info
+        console.log("Rendering subject:", subject, "exam type:", examType, "exam board:", examBoard);
+        
         return (
           <div key={subject} className="subject-column">
             <div 
@@ -205,8 +208,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                 <div className="subject-info">
                   <h2>{subject}</h2>
                   <div className="subject-meta">
-                    {examType && <span className="meta-tag exam-type">{examType}</span>}
-                    {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
+                    {examType && <span className="meta-tag exam-type">Type: {examType}</span>}
+                    {examBoard && <span className="meta-tag exam-board">Board: {examBoard}</span>}
                   </div>
                 </div>
                 <span className="card-count">

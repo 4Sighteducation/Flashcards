@@ -51,6 +51,7 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 5px;
+  margin-top: 5px;
 }
 
 .meta-tag {
@@ -60,11 +61,13 @@
   font-size: 0.8em;
   border-radius: 4px;
   white-space: nowrap;
+  font-weight: bold;
 }
 
 .exam-type, .exam-board {
-  background-color: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .topic-group {

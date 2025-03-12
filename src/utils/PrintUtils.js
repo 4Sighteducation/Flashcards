@@ -9,28 +9,16 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
   const printContainer = document.createElement("div");
   printContainer.id = "print-container";
 
-  // Group cards into pairs for printing (2 cards per page)
-  for (let i = 0; i < cards.length; i += 2) {
+  // Create one page per card
+  cards.forEach((card, index) => {
     // Create front page
     const frontPage = document.createElement("div");
     frontPage.className = "print-page";
     frontPage.innerHTML = `
-      <div class="print-header">
-        <h1>${title} - Card Fronts (Page ${Math.ceil((i + 1) / 2)})</h1>
-      </div>
-      <div class="print-body">
-        <div class="print-card">
-          <div class="print-card-content">
-            ${cards[i]?.front || cards[i]?.question || ''}
-          </div>
+      <div class="print-card">
+        <div class="print-card-content">
+          ${card.front || card.question || ''}
         </div>
-        ${i + 1 < cards.length ? `
-          <div class="print-card">
-            <div class="print-card-content">
-              ${cards[i + 1]?.front || cards[i + 1]?.question || ''}
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
 
@@ -38,35 +26,23 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
     const backPage = document.createElement("div");
     backPage.className = "print-page";
     backPage.innerHTML = `
-      <div class="print-header">
-        <h1>${title} - Card Backs (Page ${Math.ceil((i + 1) / 2)})</h1>
-      </div>
-      <div class="print-body">
-        <div class="print-card">
-          <div class="print-card-content">
-            ${cards[i]?.back || ''}
-          </div>
+      <div class="print-card">
+        <div class="print-card-content">
+          ${card.back || ''}
         </div>
-        ${i + 1 < cards.length ? `
-          <div class="print-card">
-            <div class="print-card-content">
-              ${cards[i + 1]?.back || ''}
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
 
     printContainer.appendChild(frontPage);
     printContainer.appendChild(backPage);
-  }
+  });
 
   // Open print window
   const printWindow = window.open("", "PrintDoubleSided", "width=1200,height=800");
   printWindow.document.write(`
     <html>
     <head>
-      <title>Print Double-Sided Flashcards</title>
+      <title>Print Flashcards</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -76,20 +52,12 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
         .print-page {
           page-break-after: always;
           display: flex;
-          flex-direction: column;
-          padding: 0.25in;
+          justify-content: center;
+          align-items: center;
+          height: 99vh;
+          width: 100%;
           box-sizing: border-box;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 0.25in;
-        }
-        .print-body {
-          display: flex;
-          flex-direction: row;
-          justify-content: space-around;
-          gap: 0.5in;
-          flex-grow: 1;
+          padding: 0.25in;
         }
         .print-card {
           border: 1px solid #ccc;
@@ -101,6 +69,7 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
           align-items: center;
           padding: 0.25in;
           box-sizing: border-box;
+          background-color: white;
         }
         .print-card-content {
           width: 100%;
@@ -110,7 +79,10 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
         @media print {
           @page {
             size: landscape;
-            margin: 0.25in;
+            margin: 0;
+          }
+          body {
+            margin: 0;
           }
           .print-page {
             margin: 0;
@@ -147,33 +119,21 @@ export const printCardFronts = (cards, title = 'Flashcards') => {
   const printContainer = document.createElement("div");
   printContainer.id = "print-container-fronts";
 
-  // Group cards into pairs for printing (2 cards per page)
-  for (let i = 0; i < cards.length; i += 2) {
+  // Create one page per card
+  cards.forEach((card, index) => {
     // Create front page
     const frontPage = document.createElement("div");
     frontPage.className = "print-page";
     frontPage.innerHTML = `
-      <div class="print-header">
-        <h1>${title} - Card Fronts (Page ${Math.ceil((i + 1) / 2)})</h1>
-      </div>
-      <div class="print-body">
-        <div class="print-card">
-          <div class="print-card-content">
-            ${cards[i]?.front || cards[i]?.question || ''}
-          </div>
+      <div class="print-card">
+        <div class="print-card-content">
+          ${card.front || card.question || ''}
         </div>
-        ${i + 1 < cards.length ? `
-          <div class="print-card">
-            <div class="print-card-content">
-              ${cards[i + 1]?.front || cards[i + 1]?.question || ''}
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
 
     printContainer.appendChild(frontPage);
-  }
+  });
 
   // Open print window
   const printWindow = window.open("", "PrintFronts", "width=1200,height=800");
@@ -190,20 +150,12 @@ export const printCardFronts = (cards, title = 'Flashcards') => {
         .print-page {
           page-break-after: always;
           display: flex;
-          flex-direction: column;
-          padding: 0.25in;
+          justify-content: center;
+          align-items: center;
+          height: 99vh;
+          width: 100%;
           box-sizing: border-box;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 0.25in;
-        }
-        .print-body {
-          display: flex;
-          flex-direction: row;
-          justify-content: space-around;
-          gap: 0.5in;
-          flex-grow: 1;
+          padding: 0.25in;
         }
         .print-card {
           border: 1px solid #ccc;
@@ -215,6 +167,7 @@ export const printCardFronts = (cards, title = 'Flashcards') => {
           align-items: center;
           padding: 0.25in;
           box-sizing: border-box;
+          background-color: white;
         }
         .print-card-content {
           width: 100%;
@@ -224,7 +177,10 @@ export const printCardFronts = (cards, title = 'Flashcards') => {
         @media print {
           @page {
             size: landscape;
-            margin: 0.25in;
+            margin: 0;
+          }
+          body {
+            margin: 0;
           }
           .print-page {
             margin: 0;
@@ -261,33 +217,21 @@ export const printCardBacks = (cards, title = 'Flashcards') => {
   const printContainer = document.createElement("div");
   printContainer.id = "print-container-backs";
 
-  // Group cards into pairs for printing (2 cards per page)
-  for (let i = 0; i < cards.length; i += 2) {
+  // Create one page per card
+  cards.forEach((card, index) => {
     // Create back page
     const backPage = document.createElement("div");
     backPage.className = "print-page back";
     backPage.innerHTML = `
-      <div class="print-header">
-        <h1>${title} - Card Backs (Page ${Math.ceil((i + 1) / 2)})</h1>
-      </div>
-      <div class="print-body">
-        <div class="print-card">
-          <div class="print-card-content">
-            ${cards[i]?.back || ''}
-          </div>
+      <div class="print-card">
+        <div class="print-card-content">
+          ${card.back || ''}
         </div>
-        ${i + 1 < cards.length ? `
-          <div class="print-card">
-            <div class="print-card-content">
-              ${cards[i + 1]?.back || ''}
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
 
     printContainer.appendChild(backPage);
-  }
+  });
 
   // Open print window
   const printWindow = window.open("", "PrintBacks", "width=1200,height=800");
@@ -304,23 +248,15 @@ export const printCardBacks = (cards, title = 'Flashcards') => {
         .print-page {
           page-break-after: always;
           display: flex;
-          flex-direction: column;
-          padding: 0.25in;
+          justify-content: center;
+          align-items: center;
+          height: 99vh;
+          width: 100%;
           box-sizing: border-box;
+          padding: 0.25in;
         }
         .print-page.back {
           background-color: #f9f9f9;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 0.25in;
-        }
-        .print-body {
-          display: flex;
-          flex-direction: row;
-          justify-content: space-around;
-          gap: 0.5in;
-          flex-grow: 1;
         }
         .print-card {
           border: 1px solid #ccc;
@@ -342,7 +278,10 @@ export const printCardBacks = (cards, title = 'Flashcards') => {
         @media print {
           @page {
             size: landscape;
-            margin: 0.25in;
+            margin: 0;
+          }
+          body {
+            margin: 0;
           }
           .print-page {
             margin: 0;
