@@ -81,18 +81,14 @@ export const checkTranslationApiAvailability = async () => {
  */
 export const languageCodeMap = {
   'en': 'en', // English
-  'cy': 'cy', // Welsh - may not be supported by all translation APIs
+  'cy': 'en', // Welsh - may not be supported by all translation APIs, fallback to English
   'ar': 'ar', // Arabic
   'es': 'es', // Spanish
   'it': 'it', // Italian
   'fr': 'fr', // French
-  'ja': 'ja', // Japanese
+  'ja': 'zh', // Japanese - fallback to Chinese if not supported
   'vi': 'vi', // Vietnamese
   'zh': 'zh', // Chinese (Simplified)
-  
-  // Fallbacks if specific codes aren't supported
-  'cy': 'en', // Fallback for Welsh if not supported
-  'ja': 'zh', // Fallback for Japanese if not supported
 };
 
 /**

@@ -77,8 +77,12 @@ export const getRandomColor = () => {
   return color;
 };
 
-export default {
+// Create a named object before exporting
+const colorUtils = {
   getContrastColor,
   adjustBrightness,
   getRandomColor
-}; 
+};
+
+// Export the named object
+export default colorUtils; 

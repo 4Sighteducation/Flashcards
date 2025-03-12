@@ -16,9 +16,12 @@ export const firebaseFunctions = {
   // Add any mock functions needed here
 };
 
-// Export any other Firebase services that might be imported elsewhere
-export default {
+// Create a named object before exporting
+const firebase = {
   db,
   auth,
   firebaseFunctions
-}; 
+};
+
+// Export the named object
+export default firebase; 
