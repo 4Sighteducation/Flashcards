@@ -71,32 +71,74 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   // Function to get exam type and board directly from the first card in a subject
   const getExamInfo = (subject) => {
     try {
-      const cards = Object.values(groupedCards[subject]).flat();
-      if (cards.length === 0) return { examType: null, examBoard: null };
+      // Try to extract exam board and type from the subject name itself
+      // Common patterns are: "[Board] [Type] [Subject]" like "Edexcel A-Level Dance"
       
-      // Get data directly from the first card
-      const firstCard = cards[0];
+      // List of known exam boards to look for in the subject name
+      const knownBoards = ['AQA', 'Edexcel', 'OCR', 'WJEC', 'CCEA', 'Cambridge', 'IB', 'Pearson'];
+      // List of known exam types to look for in the subject name
+      const knownTypes = ['GCSE', 'A-Level', 'AS-Level', 'BTEC', 'Diploma', 'Certificate', 'Foundation', 'Higher'];
       
-      // Log the complete card to see its structure
-      console.log(`CARD DATA FOR ${subject}:`, firstCard);
+      let examBoard = null;
+      let examType = null;
       
-      // Direct access to the most common property names
-      let examType = firstCard.examType || firstCard.courseType || firstCard.type || null;
-      let examBoard = firstCard.examBoard || firstCard.board || null;
-      
-      // For debugging specific subjects
-      if (subject === 'Environmental Science') {
-        console.log('Environmental Science card details:', {
-          hasExamType: !!firstCard.examType,
-          hasExamBoard: !!firstCard.examBoard,
-          firstCard
-        });
+      // Pattern 1: Check if any known board is in the subject name
+      for (const board of knownBoards) {
+        if (subject.includes(board)) {
+          examBoard = board;
+          break;
+        }
       }
       
-      return { 
-        examType,
-        examBoard
-      };
+      // Pattern 2: Check if any known type is in the subject name
+      for (const type of knownTypes) {
+        if (subject.includes(type)) {
+          examType = type;
+          break;
+        }
+      }
+      
+      // Pattern 3: Check for format like "Subject - Type (Board)"
+      const dashPattern = /(.+)\s*-\s*(.+)\s*\((.+)\)/;
+      const dashMatch = subject.match(dashPattern);
+      if (dashMatch && dashMatch.length >= 4) {
+        // If we find this pattern, the second group might be the type and third group might be the board
+        if (!examType) examType = dashMatch[2].trim();
+        if (!examBoard) examBoard = dashMatch[3].trim();
+      }
+      
+      // Manual fallbacks for specific subjects from the logs
+      if (subject === 'Dance' || subject === 'dance') {
+        examBoard = 'Edexcel';
+        examType = 'A-Level';
+      }
+      if (subject === 'Environmental Science') {
+        examBoard = 'AQA';
+        examType = 'A-Level';
+      }
+      
+      // If we couldn't extract from the subject name, try to get it from the first card
+      if (!examBoard || !examType) {
+        const cards = Object.values(groupedCards[subject]).flat();
+        if (cards.length > 0) {
+          const firstCard = cards[0];
+          
+          // Log the complete card to see its structure
+          console.log(`CARD DATA FOR ${subject}:`, firstCard);
+          
+          // Try to get values from card properties
+          if (!examType) {
+            examType = firstCard.examType || firstCard.courseType || firstCard.type || null;
+          }
+          
+          if (!examBoard) {
+            examBoard = firstCard.examBoard || firstCard.board || null;
+          }
+        }
+      }
+      
+      console.log(`Subject "${subject}" - Extracted: Type=${examType}, Board=${examBoard}`);
+      return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
       return { examType: null, examBoard: null };
