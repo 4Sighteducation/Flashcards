@@ -42,7 +42,7 @@ const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps, setTotalSteps] = useState(8);
+  const [totalSteps, setTotalSteps] = useState(7);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -725,8 +725,6 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         return formData.numCards > 0 && formData.numCards <= 20;
       case 6: // Question Type
         return !!formData.questionType;
-      case 7: // Color Selection
-        return true; // Always allow proceeding from color selection since we have a default
       default:
         return true;
     }
@@ -741,6 +739,45 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
       // Determine final subject and topic (use new values if provided)
       const finalSubject = formData.newSubject || formData.subject;
       const finalTopic = formData.newTopic || formData.topic;
+      
+      // Automatically select a color if not already set
+      // This can happen if we're coming from a previous step
+      let cardColor = formData.subjectColor;
+      
+      // Get existing subject colors from parent component's subjects if available
+      const existingSubjects = subjects || [];
+      const existingColors = existingSubjects
+        .filter(sub => sub.subjectColor) // Only consider subjects with colors
+        .map(sub => sub.subjectColor.toLowerCase()); // Normalize color format
+      
+      // If this is a new subject that matches an existing one, use that color
+      const matchingSubject = existingSubjects.find(sub => 
+        sub.subject && (sub.subject.toLowerCase() === finalSubject.toLowerCase())
+      );
+      
+      if (matchingSubject && matchingSubject.subjectColor) {
+        // Use the existing subject color
+        cardColor = matchingSubject.subjectColor;
+        console.log(`Using existing color ${cardColor} for subject ${finalSubject}`);
+      } else {
+        // Find a color not already in use
+        const availableColors = BRIGHT_COLORS.filter(color => 
+          !existingColors.includes(color.toLowerCase())
+        );
+        
+        if (availableColors.length > 0) {
+          // Use a color that's not already used by another subject
+          cardColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+          console.log(`Selected new color ${cardColor} for subject ${finalSubject}`);
+        } else {
+          // If all colors are used, just pick a random one
+          cardColor = BRIGHT_COLORS[Math.floor(Math.random() * BRIGHT_COLORS.length)];
+          console.log(`All colors in use, randomly selected ${cardColor} for subject ${finalSubject}`);
+        }
+      }
+      
+      // Update the form data with the selected color
+      setFormData(prev => ({ ...prev, subjectColor: cardColor }));
       
       // Create prompt based on question type and other parameters
       let prompt;
@@ -857,8 +894,8 @@ Use this format for different question types:
           subject: finalSubject,
           topic: finalTopic,
           questionType: formData.questionType,
-          cardColor: formData.subjectColor,
-          baseColor: formData.subjectColor,
+          cardColor: cardColor,
+          baseColor: cardColor,
           timestamp: new Date().toISOString(),
           boxNum: 1, // Start in box 1
         };
@@ -950,7 +987,7 @@ Use this format for different question types:
 
   // Call to generate cards when arriving at the final step
   useEffect(() => {
-    if (currentStep === 7 && generatedCards.length === 0 && !isGenerating) {
+    if (currentStep === 6 && generatedCards.length === 0 && !isGenerating) {
       generateCards();
     }
   }, [currentStep]);
@@ -1035,6 +1072,13 @@ Use this format for different question types:
   // Generate new batch of cards
   const handleRegenerateCards = () => {
     setGeneratedCards([]);
+    setIsGenerating(true);
+    
+    // Keep the existing color when regenerating
+    const currentColor = formData.subjectColor;
+    
+    // We want to keep all the existing parameters the same,
+    // including the color, but generate new cards
     generateCards();
   };
 
@@ -1235,36 +1279,7 @@ Use this format for different question types:
           </div>
         );
         
-      case 7: // Color Selection
-        return (
-          <div className="step-content">
-            <h2>Select Card Color</h2>
-            <div className="color-selector-container">
-              <div className="color-grid">
-                {BRIGHT_COLORS.map(color => (
-                  <div 
-                    key={color} 
-                    className={`color-swatch ${formData.subjectColor === color ? 'selected' : ''}`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorSelect(color)}
-                  ></div>
-                ))}
-              </div>
-
-              {formData.subjectColor && (
-                <div className="selected-color-preview">
-                  <div className="color-preview" style={{ backgroundColor: formData.subjectColor }}>
-                    <span style={{ color: getContrastColor(formData.subjectColor) }}>
-                      Sample Text
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-        
-      case 8: // Confirmation and Generated Cards
+      case 7: // Confirmation and Generated Cards
         return renderConfirmation();
         
       default:
@@ -1416,7 +1431,7 @@ Use this format for different question types:
     setCompletedSteps(newCompletedSteps);
   }, [currentStep, formData]);
 
-  // Step 8: Confirmation Step and Generated Cards
+  // Step 7: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
     return (
       <div className="generator-step review-step">
@@ -1454,16 +1469,6 @@ Use this format for different question types:
               {QUESTION_TYPES.find(t => t.value === formData.questionType)?.label || formData.questionType}
             </span>
           </div>
-          
-          <div className="confirmation-item">
-            <span className="label">Card Color:</span>
-            <span className="value color-preview" style={{
-              backgroundColor: formData.subjectColor,
-              color: getContrastColor(formData.subjectColor)
-            }}>
-              {formData.subjectColor}
-            </span>
-          </div>
         </div>
         
         {error && (
@@ -1474,8 +1479,9 @@ Use this format for different question types:
         
         {isGenerating ? (
           <div className="loading-indicator">
-            <p>Generating your cards...</p>
             <div className="spinner"></div>
+            <p>Creating {formData.numCards} flashcards for {formData.examBoard} {formData.examType} {formData.newSubject || formData.subject}...</p>
+            <p className="loading-subtext">Our AI is analyzing the curriculum and crafting high-quality questions tailored to your specifications.</p>
           </div>
         ) : generatedCards.length > 0 ? (
           <>
