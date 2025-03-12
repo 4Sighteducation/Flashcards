@@ -22,7 +22,6 @@ const PrintModal = ({ cards, title, onClose }) => {
     <div className="print-modal-overlay" onClick={onClose}>
       <div className="print-modal" onClick={(e) => e.stopPropagation()}>
         <div className="print-modal-header">
-          <h2>Print Options</h2>
           <button className="close-modal-btn" onClick={onClose}>✕</button>
         </div>
         <div className="print-modal-content">

@@ -212,9 +212,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                 <span className="card-count">
                   ({Object.values(groupedCards[subject]).flat().length} cards)
                 </span>
-                <span className="expand-icon">
-                  {expandedTopics[subject] ? '▼' : '▶'}
-                </span>
               </div>
               <button 
                 className="print-btn" 
@@ -247,9 +244,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                       </div>
                       <span className="card-count">
                         ({groupedCards[subject][topic].length} cards)
-                      </span>
-                      <span className="expand-icon">
-                        {expandedTopics[`${subject}-${topic}`] ? '▼' : '▶'}
                       </span>
                     </div>
                     <button 

@@ -75,40 +75,42 @@ export const printDoubleSidedCards = (cards, title = 'Flashcards') => {
         }
         .print-page {
           page-break-after: always;
-          width: 210mm;
-          height: 297mm;
-          padding: 10mm;
+          display: flex;
+          flex-direction: column;
+          padding: 0.25in;
           box-sizing: border-box;
         }
         .print-header {
           text-align: center;
-          margin-bottom: 10mm;
+          margin-bottom: 0.25in;
         }
         .print-body {
           display: flex;
-          flex-direction: column;
-          gap: 10mm;
-          height: calc(100% - 20mm);
+          flex-direction: row;
+          justify-content: space-around;
+          gap: 0.5in;
+          flex-grow: 1;
         }
         .print-card {
           border: 1px solid #ccc;
-          border-radius: 5mm;
-          height: calc(50% - 5mm);
+          border-radius: 0.15in;
+          width: 5in;
+          height: 3in;
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 5mm;
+          padding: 0.25in;
           box-sizing: border-box;
         }
         .print-card-content {
           width: 100%;
           text-align: center;
-          font-size: 16pt;
+          font-size: 12pt;
         }
         @media print {
           @page {
-            size: A4;
-            margin: 0;
+            size: landscape;
+            margin: 0.25in;
           }
           .print-page {
             margin: 0;
@@ -187,40 +189,42 @@ export const printCardFronts = (cards, title = 'Flashcards') => {
         }
         .print-page {
           page-break-after: always;
-          width: 210mm;
-          height: 297mm;
-          padding: 10mm;
+          display: flex;
+          flex-direction: column;
+          padding: 0.25in;
           box-sizing: border-box;
         }
         .print-header {
           text-align: center;
-          margin-bottom: 10mm;
+          margin-bottom: 0.25in;
         }
         .print-body {
           display: flex;
-          flex-direction: column;
-          gap: 10mm;
-          height: calc(100% - 20mm);
+          flex-direction: row;
+          justify-content: space-around;
+          gap: 0.5in;
+          flex-grow: 1;
         }
         .print-card {
           border: 1px solid #ccc;
-          border-radius: 5mm;
-          height: calc(50% - 5mm);
+          border-radius: 0.15in;
+          width: 5in;
+          height: 3in;
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 5mm;
+          padding: 0.25in;
           box-sizing: border-box;
         }
         .print-card-content {
           width: 100%;
           text-align: center;
-          font-size: 16pt;
+          font-size: 12pt;
         }
         @media print {
           @page {
-            size: A4;
-            margin: 0;
+            size: landscape;
+            margin: 0.25in;
           }
           .print-page {
             margin: 0;
@@ -299,9 +303,9 @@ export const printCardBacks = (cards, title = 'Flashcards') => {
         }
         .print-page {
           page-break-after: always;
-          width: 210mm;
-          height: 297mm;
-          padding: 10mm;
+          display: flex;
+          flex-direction: column;
+          padding: 0.25in;
           box-sizing: border-box;
         }
         .print-page.back {
@@ -309,34 +313,36 @@ export const printCardBacks = (cards, title = 'Flashcards') => {
         }
         .print-header {
           text-align: center;
-          margin-bottom: 10mm;
+          margin-bottom: 0.25in;
         }
         .print-body {
           display: flex;
-          flex-direction: column;
-          gap: 10mm;
-          height: calc(100% - 20mm);
+          flex-direction: row;
+          justify-content: space-around;
+          gap: 0.5in;
+          flex-grow: 1;
         }
         .print-card {
           border: 1px solid #ccc;
-          border-radius: 5mm;
-          height: calc(50% - 5mm);
+          border-radius: 0.15in;
+          width: 5in;
+          height: 3in;
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 5mm;
+          padding: 0.25in;
           box-sizing: border-box;
           background-color: white;
         }
         .print-card-content {
           width: 100%;
           text-align: center;
-          font-size: 16pt;
+          font-size: 12pt;
         }
         @media print {
           @page {
-            size: A4;
-            margin: 0;
+            size: landscape;
+            margin: 0.25in;
           }
           .print-page {
             margin: 0;
