@@ -54,8 +54,8 @@
 
 .flashcard-back {
   transform: rotateY(180deg);
-  background-color: #ffffff !important;
-  color: #333333 !important;
+  background-color: white;
+  color: #333;
 }
 
 /* Text container for scaling */
