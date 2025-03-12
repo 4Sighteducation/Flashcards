@@ -42,7 +42,7 @@ const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps, setTotalSteps] = useState(7);
+  const [totalSteps, setTotalSteps] = useState(8);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -724,6 +724,8 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
         return formData.numCards > 0 && formData.numCards <= 20;
       case 6: // Question Type
         return !!formData.questionType;
+      case 7: // Color Selection
+        return !!formData.subjectColor;
       default:
         return true;
     }
@@ -1059,6 +1061,9 @@ Use this format for different question types:
     try {
       setIsGenerating(true);
       setError(null);
+      // Show the modal immediately with the loading indicator
+      setShowTopicModal(true);
+      
       const topics = await generateTopics(
         formData.examBoard,
         formData.examType,
@@ -1067,9 +1072,9 @@ Use this format for different question types:
       setAvailableTopics(topics);
       setHierarchicalTopics(topics.map(topic => ({ topic })));
       setTopicListSaved(false);
-      setShowTopicModal(true);
     } catch (err) {
       setError(err.message);
+      // Don't close the modal on error, just show the error inside it
     } finally {
       setIsGenerating(false);
     }
@@ -1226,9 +1231,14 @@ Use this format for different question types:
                 <p>Acronym questions help memorize lists or sequences using memorable letter patterns.</p>
               )}
             </div>
-            
-            <div className="color-selector-section">
-              <h3>Select Card Color</h3>
+          </div>
+        );
+        
+      case 7: // Color Selection
+        return (
+          <div className="step-content">
+            <h2>Select Card Color</h2>
+            <div className="color-selector-container">
               <div className="color-grid">
                 {BRIGHT_COLORS.map(color => (
                   <div 
@@ -1239,23 +1249,21 @@ Use this format for different question types:
                   ></div>
                 ))}
               </div>
-              <div className="selected-color-preview">
-                <span>Selected Color:</span>
-                <div 
-                  className="color-preview" 
-                  style={{ 
-                    backgroundColor: formData.subjectColor,
-                    color: getContrastColor(formData.subjectColor)
-                  }}
-                >
-                  Sample Text
+
+              {formData.subjectColor && (
+                <div className="selected-color-preview">
+                  <div className="color-preview" style={{ backgroundColor: formData.subjectColor }}>
+                    <span style={{ color: getContrastColor(formData.subjectColor) }}>
+                      Sample Text
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         );
         
-      case 7: // Confirmation and Generated Cards
+      case 8: // Confirmation and Generated Cards
         return renderConfirmation();
         
       default:
@@ -1414,7 +1422,7 @@ Use this format for different question types:
     setCompletedSteps(newCompletedSteps);
   }, [currentStep, formData]);
 
-  // Step 7: Confirmation Step and Generated Cards
+  // Step 8: Confirmation Step and Generated Cards
   const renderConfirmation = () => {
     return (
       <div className="generator-step review-step">
