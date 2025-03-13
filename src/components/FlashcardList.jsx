@@ -126,54 +126,33 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         if (cards.length > 0) {
           const firstCard = cards[0];
           
-          // Enhanced debugging: Log complete card structure for analysis
-          console.log(`DETAILED CARD DATA FOR "${subject}":`, JSON.stringify(firstCard, null, 2));
-          
           // Try to get values directly from the card properties
-          console.log(`Checking fields directly on card:`, {
-            examType: firstCard.examType,
-            courseType: firstCard.courseType,
-            type: firstCard.type,
-            examBoard: firstCard.examBoard,
-            board: firstCard.board
-          });
-          
           if (!examType && firstCard.examType) {
             examType = firstCard.examType;
-            console.log(`Found examType directly on card: ${examType}`);
           } else if (!examType && firstCard.courseType) {
             examType = firstCard.courseType;
-            console.log(`Found courseType directly on card: ${examType}`);
           } else if (!examType && firstCard.type) {
             examType = firstCard.type;
-            console.log(`Found type directly on card: ${examType}`);
           }
           
           if (!examBoard && firstCard.examBoard) {
             examBoard = firstCard.examBoard;
-            console.log(`Found examBoard directly on card: ${examBoard}`);
           } else if (!examBoard && firstCard.board) {
             examBoard = firstCard.board;
-            console.log(`Found board directly on card: ${examBoard}`);
           }
           
           // If we still don't have values, check meta properties if they exist
           if ((!examType || !examBoard) && firstCard.meta) {
-            console.log(`Checking meta data for ${subject}:`, firstCard.meta);
             if (!examType && firstCard.meta.examType) {
               examType = firstCard.meta.examType;
-              console.log(`Found examType in meta: ${examType}`);
             } else if (!examType && firstCard.meta.courseType) {
               examType = firstCard.meta.courseType;
-              console.log(`Found courseType in meta: ${examType}`);
             }
             
             if (!examBoard && firstCard.meta.examBoard) {
               examBoard = firstCard.meta.examBoard;
-              console.log(`Found examBoard in meta: ${examBoard}`);
             } else if (!examBoard && firstCard.meta.board) {
               examBoard = firstCard.meta.board;
-              console.log(`Found board in meta: ${examBoard}`);
             }
           }
         }
@@ -183,7 +162,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
       if (!examType) examType = "Course";
       if (!examBoard) examBoard = "General";
       
-      console.log(`FINAL EXTRACTED FOR "${subject}": Type=${examType}, Board=${examBoard}`);
       return { examType, examBoard };
     } catch (error) {
       console.error("Error in getExamInfo:", error);
@@ -245,8 +223,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   if (cards.length === 0) {
     return (
       <div className="empty-card-bank">
-        <h3>{t("cards.noCards")}</h3>
-        <p>{t("cards.createNewCards")}</p>
+        <h3><AutoTranslatedText content={t("cards.noCards")} /></h3>
+        <p><AutoTranslatedText content={t("cards.createNewCards")} /></p>
       </div>
     );
   }
@@ -268,9 +246,6 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
         const { examType, examBoard } = getExamInfo(subject);
         const textColor = getContrastColor(subjectColor);
         
-        // Debug logging
-        console.log(`Rendering ${subject} with type=${examType}, board=${examBoard}`);
-        
         return (
           <div key={subject} className="subject-container">
             <div 
@@ -285,14 +260,22 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
             >
               <div className="subject-content" onClick={() => toggleExpand(subject)}>
                 <div className="subject-info">
-                  <h2>{subject}</h2>
+                  <h2><AutoTranslatedText content={subject} /></h2>
                   <div className="subject-meta">
-                    {examType && <span className="meta-tag exam-type">{examType}</span>}
-                    {examBoard && <span className="meta-tag exam-board">{examBoard}</span>}
+                    {examType && (
+                      <span className="meta-tag exam-type">
+                        <AutoTranslatedText content={examType} />
+                      </span>
+                    )}
+                    {examBoard && (
+                      <span className="meta-tag exam-board">
+                        <AutoTranslatedText content={examBoard} />
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="card-count">
-                  ({Object.values(groupedCards[subject]).flat().length} cards)
+                  (<AutoTranslatedText content={`${Object.values(groupedCards[subject]).flat().length} cards`} />)
                 </span>
               </div>
               <button 
@@ -321,11 +304,15 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                   >
                     <div className="topic-content" onClick={() => toggleExpand(`${subject}-${topic}`)}>
                       <div className="topic-info">
-                        <h3>{topic}</h3>
-                        {topicDate && <span className="topic-date">Created: {topicDate}</span>}
+                        <h3><AutoTranslatedText content={topic} /></h3>
+                        {topicDate && (
+                          <span className="topic-date">
+                            <AutoTranslatedText content={`Created: ${topicDate}`} />
+                          </span>
+                        )}
                       </div>
                       <span className="card-count">
-                        ({groupedCards[subject][topic].length} cards)
+                        (<AutoTranslatedText content={`${groupedCards[subject][topic].length} cards`} />)
                       </span>
                     </div>
                     <button 
