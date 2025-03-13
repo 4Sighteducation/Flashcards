@@ -5,8 +5,10 @@ import { getContrastColor } from '../utils/colorUtils';
 import ScaledText from './ScaledText';
 import MultipleChoiceOptions from './MultipleChoiceOptions';
 import AutoTranslatedText from './AutoTranslatedText';
+import { useTranslation } from 'react-i18next';
 
 const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, preview = false, style = {} }) => {
+  const { t } = useTranslation();
   const [isFlipped, setIsFlipped] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -127,7 +129,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
       return card.answer;
     }
     
-    return 'No correct answer specified';
+    return t('cards.noCorrectAnswer');
   };
   
   // Determine if this is a multiple choice card
@@ -153,16 +155,22 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
           <>
             {confirmDelete ? (
               <div className="delete-confirm">
-                <span style={{ color: textColor }}>Delete?</span>
-                <button onClick={confirmDeleteCard} className="confirm-btn">Yes</button>
-                <button onClick={cancelDelete} className="cancel-btn">No</button>
+                <span style={{ color: textColor }}>
+                  <AutoTranslatedText content={t('cards.deleteConfirm')} />
+                </span>
+                <button onClick={confirmDeleteCard} className="confirm-btn">
+                  <AutoTranslatedText content={t('common.yes')} />
+                </button>
+                <button onClick={cancelDelete} className="cancel-btn">
+                  <AutoTranslatedText content={t('common.no')} />
+                </button>
               </div>
             ) : (
               <>
                 <button 
                   className="delete-btn" 
                   onClick={handleDeleteClick}
-                  title="Delete card"
+                  title={t('cards.deleteCard')}
                 >
                   ✕
                 </button>
@@ -170,7 +178,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <button 
                   className="color-btn" 
                   onClick={toggleColorPicker}
-                  title="Change color"
+                  title={t('cards.changeColor')}
                 >
                   🎨
                 </button>
@@ -179,7 +187,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                   <button 
                     className="info-btn" 
                     onClick={toggleInfoModal}
-                    title="View additional information"
+                    title={t('cards.viewInfo')}
                   >
                     ℹ️
                   </button>
@@ -220,14 +228,14 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     />
                   ) : (
                     <div className="missing-options-error" style={{ color: textColor }}>
-                      This card is marked as multiple choice but has no options
+                      <AutoTranslatedText content={t('cards.noOptionsError')} />
                     </div>
                   )}
                 </div>
               </>
             ) : (
               <ScaledText maxFontSize={16}>
-                <AutoTranslatedText content={card.front || card.question || "No question"} html={true} />
+                <AutoTranslatedText content={card.front || card.question || t('cards.noQuestion')} html={true} />
               </ScaledText>
             )}
           </div>
@@ -237,7 +245,9 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <>
                 {isMultipleChoice ? (
                   <>
-                    <h4 className="answer-heading" style={{ color: textColor }}>Correct Answer:</h4>
+                    <h4 className="answer-heading" style={{ color: textColor }}>
+                      <AutoTranslatedText content={t('cards.correctAnswer')} />:
+                    </h4>
                     <ScaledText maxFontSize={16}>
                       <AutoTranslatedText 
                         content={getCorrectAnswer()} 
@@ -248,7 +258,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 ) : (
                   <ScaledText maxFontSize={16}>
                     <AutoTranslatedText 
-                      content={card.back || card.answer || "No answer provided"} 
+                      content={card.back || card.answer || t('cards.noAnswer')} 
                       html={true} 
                     />
                   </ScaledText>
@@ -264,11 +274,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
         <div className="info-modal-overlay" onClick={closeInfoModal}>
           <div className="info-modal" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
-              <h3>Additional Information</h3>
+              <h3><AutoTranslatedText content={t('cards.additionalInfo')} /></h3>
               <button className="close-modal-btn" onClick={closeInfoModal}>✕</button>
             </div>
             <div className="info-modal-content">
-              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.detailedAnswer || "No additional information available." }} />
+              <div dangerouslySetInnerHTML={{ __html: card.additionalInfo || card.detailedAnswer || t('cards.noAdditionalInfo') }} />
             </div>
           </div>
         </div>

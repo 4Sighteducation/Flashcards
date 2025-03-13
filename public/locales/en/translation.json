@@ -37,7 +37,27 @@
     "yes": "Yes",
     "no": "No",
     "print": "Print",
-    "printAll": "Print All Cards"
+    "printAll": "Print All Cards",
+    "deleteCard": "Delete card",
+    "changeColor": "Change color",
+    "viewInfo": "View additional information",
+    "deleteConfirm": "Delete?",
+    "noOptionsError": "This card is marked as multiple choice but has no options",
+    "noQuestion": "No question",
+    "correctAnswer": "Correct Answer",
+    "noAnswer": "No answer provided",
+    "additionalInfo": "Additional Information",
+    "noAdditionalInfo": "No additional information available.",
+    "noCorrectAnswer": "No correct answer specified"
+  },
+  "print": {
+    "selectFormat": "Select print format for {{count}} cards:",
+    "fullCards": "Print Full Cards",
+    "fullCardsDesc": "Prints both fronts and backs",
+    "cardFronts": "Print Card Fronts",
+    "cardFrontsDesc": "Only prints the questions",
+    "cardBacks": "Print Card Backs",
+    "cardBacksDesc": "Only prints the answers"
   },
   "study": {
     "box": "Box",
@@ -97,5 +117,16 @@
     "ja": "Japanese",
     "vi": "Vietnamese",
     "zh": "Chinese"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
   }
 } 
