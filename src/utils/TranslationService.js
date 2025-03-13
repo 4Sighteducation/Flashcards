@@ -1,6 +1,8 @@
 // TranslationService.js
 // A utility for translating text using multiple translation APIs
 
+import { translateText as azureTranslateText, checkAzureTranslatorAvailability } from './AzureTranslationService';
+
 // LibreTranslate API configuration
 const LIBRE_TRANSLATE_API = process.env.REACT_APP_TRANSLATE_API || "https://libretranslate.com/translate";
 const LIBRE_TRANSLATE_API_KEY = process.env.REACT_APP_LIBRE_TRANSLATE_API_KEY;
@@ -9,6 +11,15 @@ const LIBRE_TRANSLATE_API_KEY = process.env.REACT_APP_LIBRE_TRANSLATE_API_KEY;
 const WELSH_TRANSLATE_API = process.env.REACT_APP_WELSH_TRANSLATE_API || "http://api.techiaith.org/translate-smt/v1/";
 const WELSH_TRANSLATE_API_KEY = process.env.REACT_APP_WELSH_TRANSLATE_API_KEY;
 const WELSH_TRANSLATE_ENGINE = process.env.REACT_APP_WELSH_TRANSLATE_ENGINE || "CofnodYCynulliad";
+
+// Server proxy endpoint for Welsh Translation API
+const SERVER_PROXY_ENDPOINT = process.env.REACT_APP_SERVER_PROXY || '/api/welsh-translate';
+
+// CORS Proxy options - try these if direct API calls fail
+const CORS_PROXIES = [
+  "https://cors-anywhere.herokuapp.com/",
+  "https://api.allorigins.win/raw?url="
+];
 
 // Create a simple in-memory cache for translations to avoid redundant API calls
 const translationCache = {};
@@ -27,7 +38,9 @@ const rateLimitTracking = {
     resetTime: null,
     remaining: 100, // Initial estimate
     requestsThisMinute: 0,
-    lastRequestTime: 0
+    lastRequestTime: 0,
+    usingProxy: false,
+    proxyIndex: -1
   }
 };
 
@@ -35,26 +48,21 @@ const rateLimitTracking = {
 const THROTTLE_DELAY = 500; // ms between requests to avoid rate limiting
 let lastRequestTime = Date.now();
 
+// Track service availability
+let azureAvailable = null; // null = not checked yet, true/false after check
+let libreAvailable = null;
+let welshAvailable = null;
+
 /**
- * Translates text using the most appropriate translation API based on the language pair
+ * Translates text using the most appropriate translation service based on language
  * 
  * @param {string} text - The text to translate
  * @param {string} targetLang - The target language code (e.g., 'cy', 'en', 'fr')
- * @param {string} sourceLang - The source language code
+ * @param {string} sourceLang - The source language code (defaults to 'en')
  * @returns {Promise<string>} - The translated text
  */
 export const translateText = async (text, targetLang, sourceLang = 'en') => {
   if (!text || text.trim() === '') return '';
-  
-  // IMPORTANT: Throttle requests to avoid rate limiting
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  if (timeSinceLastRequest < THROTTLE_DELAY) {
-    await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY - timeSinceLastRequest));
-  }
-  lastRequestTime = Date.now();
-  
-  console.log(`TranslationService: Translating from ${sourceLang} to ${targetLang}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
   
   // Create cache key for this translation request
   const cacheKey = `${text}_${sourceLang}_${targetLang}`;
@@ -65,55 +73,80 @@ export const translateText = async (text, targetLang, sourceLang = 'en') => {
     return translationCache[cacheKey];
   }
   
-  // Use Welsh API for Welsh <-> English translations
-  if ((targetLang === 'cy' && sourceLang === 'en') || 
-      (targetLang === 'en' && sourceLang === 'cy')) {
+  // IMPORTANT: Throttle requests to avoid rate limiting
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < THROTTLE_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY - timeSinceLastRequest));
+  }
+  lastRequestTime = Date.now();
+  
+  console.log(`Translating from ${sourceLang} to ${targetLang}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+  
+  try {
+    let translatedText;
     
-    // Check if Welsh API is rate limited
-    if (rateLimitTracking.welsh.isLimited) {
-      console.log('Welsh API is rate limited, falling back to LibreTranslate');
-      return translateWithLibreTranslate(text, targetLang, sourceLang);
-    }
-    
-    // Check if API key is properly configured
-    if (!WELSH_TRANSLATE_API_KEY || WELSH_TRANSLATE_API_KEY === 'your_actual_welsh_translate_api_key') {
-      console.warn('Welsh Translation API key is not properly configured, falling back to LibreTranslate');
-      return translateWithLibreTranslate(text, targetLang, sourceLang);
-    }
-    
-    console.log('TranslationService: Using Welsh API');
-    try {
-      const result = await translateWithWelshAPI(text, targetLang, sourceLang);
-      // Cache successful result
-      translationCache[cacheKey] = result;
-      return result;
-    } catch (error) {
-      console.error('Welsh translation failed, falling back to LibreTranslate:', error);
-      
-      // If it's a network error, mark as temporarily unavailable to avoid retrying too soon
-      if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('Network'))) {
-        console.warn('Welsh API appears to be unavailable, will temporarily use LibreTranslate');
-        rateLimitTracking.welsh.isLimited = true;
-        
-        // Try again after 30 seconds
-        setTimeout(() => {
-          rateLimitTracking.welsh.isLimited = false;
-        }, 30000);
+    // For Welsh translations, try Azure first, then Welsh API
+    if (targetLang === 'cy' || sourceLang === 'cy') {
+      // Check if Azure is available (only once)
+      if (azureAvailable === null) {
+        azureAvailable = await checkAzureTranslatorAvailability();
+        console.log(`Azure Translator available: ${azureAvailable}`);
       }
       
-      // Try LibreTranslate instead
-      return translateWithLibreTranslate(text, targetLang, sourceLang);
-    }
-  } else {
-    // Check if LibreTranslate is rate limited
-    if (rateLimitTracking.libre.isLimited) {
-      console.log('LibreTranslate is rate limited, returning original text');
-      return text;
+      // Try Azure Translator first if available
+      if (azureAvailable) {
+        try {
+          translatedText = await azureTranslateText(text, targetLang, sourceLang);
+          console.log('Azure translation successful');
+          
+          // Cache the result
+          translationCache[cacheKey] = translatedText;
+          return translatedText;
+        } catch (error) {
+          console.error('Azure translation failed, falling back to Welsh API:', error);
+          // Continue to Welsh API
+        }
+      }
+      
+      // Try Welsh API as fallback for Welsh translations
+      if (targetLang === 'cy' && sourceLang === 'en') {
+        translatedText = await translateWithWelshAPI(text);
+      } else if (targetLang === 'en' && sourceLang === 'cy') {
+        translatedText = await translateWithWelshAPI(text, true); // Reverse translation
+      }
+    } else {
+      // For non-Welsh translations, try Azure first, then LibreTranslate
+      if (azureAvailable === null) {
+        azureAvailable = await checkAzureTranslatorAvailability();
+        console.log(`Azure Translator available: ${azureAvailable}`);
+      }
+      
+      if (azureAvailable) {
+        try {
+          translatedText = await azureTranslateText(text, targetLang, sourceLang);
+          console.log('Azure translation successful');
+          
+          // Cache the result
+          translationCache[cacheKey] = translatedText;
+          return translatedText;
+        } catch (error) {
+          console.error('Azure translation failed, falling back to LibreTranslate:', error);
+          // Continue to LibreTranslate
+        }
+      }
+      
+      // Use LibreTranslate as fallback
+      translatedText = await translateWithLibreTranslate(text, targetLang, sourceLang);
     }
     
-    // Use LibreTranslate for all other language pairs
-    console.log('TranslationService: Using LibreTranslate API');
-    return translateWithLibreTranslate(text, targetLang, sourceLang);
+    // Cache the result
+    translationCache[cacheKey] = translatedText;
+    
+    return translatedText;
+  } catch (error) {
+    console.error('Translation request failed:', error);
+    return text; // Return original text on failure
   }
 };
 
@@ -121,94 +154,61 @@ export const translateText = async (text, targetLang, sourceLang = 'en') => {
  * Translates text using the Welsh Translation API
  * 
  * @param {string} text - The text to translate
- * @param {string} targetLang - The target language code ('cy' or 'en')
- * @param {string} sourceLang - The source language code ('cy' or 'en')
+ * @param {boolean} reverse - Whether to translate from Welsh to English (default is English to Welsh)
  * @returns {Promise<string>} - The translated text
  */
-const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
+const translateWithWelshAPI = async (text, reverse = false) => {
   try {
-    // Check if API key is available
+    // Check if Welsh API is available (only once)
+    if (welshAvailable === null) {
+      try {
+        const testResponse = await fetch(`${WELSH_TRANSLATE_API}`, {
+          method: 'HEAD',
+        });
+        welshAvailable = testResponse.ok;
+        console.log(`Welsh API available: ${welshAvailable}`);
+      } catch (error) {
+        welshAvailable = false;
+        console.error('Welsh API availability check failed:', error);
+      }
+    }
+    
+    if (!welshAvailable) {
+      throw new Error('Welsh Translation API is not available');
+    }
+    
     if (!WELSH_TRANSLATE_API_KEY) {
       console.error('Welsh Translation API key not found');
       throw new Error('Welsh Translation API key not found');
     }
     
-    // Update rate limit tracking
-    rateLimitTracking.welsh.requestsThisMinute++;
-    rateLimitTracking.welsh.lastRequestTime = Date.now();
+    const direction = reverse ? 'cy-en' : 'en-cy';
+    const url = `${WELSH_TRANSLATE_API}?lang=${direction}&api_key=${WELSH_TRANSLATE_API_KEY}&engine=${WELSH_TRANSLATE_ENGINE}`;
     
-    console.log(`Welsh API call: ${WELSH_TRANSLATE_API}?api_key=***&q=${encodeURIComponent(text.substring(0, 20))}...`);
-    
-    // Construct the API URL with query parameters
-    const url = new URL(WELSH_TRANSLATE_API);
-    url.searchParams.append('api_key', WELSH_TRANSLATE_API_KEY);
-    url.searchParams.append('q', text);
-    url.searchParams.append('engine', WELSH_TRANSLATE_ENGINE);
-    url.searchParams.append('source', sourceLang);
-    url.searchParams.append('target', targetLang);
-    
-    // Make the API request with additional options
-    const response = await fetch(url.toString(), {
-      method: 'GET',
+    const response = await fetch(url, {
+      method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'Origin': window.location.origin
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      // Add credentials to handle CORS properly
-      credentials: 'omit',
-      // Longer timeout for potentially slow API
-      timeout: 10000,
-      // Indicate we can accept compressed responses
-      compress: true,
-      // Don't follow redirects automatically
-      redirect: 'follow',
-      // Set mode to cors to handle cross-origin requests
-      mode: 'cors'
+      body: `text=${encodeURIComponent(text)}`,
     });
     
-    console.log('Welsh API response status:', response.status);
-    
-    // Check for rate limiting
-    if (response.status === 429) {
-      console.error('Welsh API rate limit reached');
-      rateLimitTracking.welsh.isLimited = true;
-      
-      // Reset rate limit status after 60 seconds
-      setTimeout(() => {
-        rateLimitTracking.welsh.isLimited = false;
-        rateLimitTracking.welsh.requestsThisMinute = 0;
-      }, 60000);
-      
-      throw new Error('Welsh translation API rate limit reached');
-    }
-    
-    // Get the response as text first for debugging
-    const responseText = await response.text();
-    console.log('Welsh API response:', responseText);
-    
-    // Parse the JSON
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Failed to parse Welsh API response as JSON:', parseError);
-      throw new Error(`Welsh translation failed: Invalid response format`);
-    }
-    
     if (!response.ok) {
-      console.error('Welsh translation error:', data);
-      throw new Error(`Welsh translation failed: ${data.errors ? data.errors[0] : 'Unknown error'}`);
+      const errorText = await response.text();
+      console.error('Welsh Translation API error:', errorText);
+      throw new Error(`Welsh Translation API failed: ${errorText}`);
     }
     
-    if (!data.success) {
-      throw new Error(`Welsh translation failed: ${data.errors ? data.errors[0] : 'Unknown error'}`);
+    const data = await response.json();
+    
+    if (!data || !data.translation) {
+      throw new Error('Invalid response from Welsh Translation API');
     }
     
-    console.log('Welsh translation result:', data.translations[0].translatedText);
-    return data.translations[0].translatedText;
+    return data.translation;
   } catch (error) {
     console.error('Welsh translation request failed:', error);
-    throw error; // Let the caller handle the fallback
+    throw error;
   }
 };
 
@@ -222,84 +222,272 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
  */
 const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
   try {
-    const actualSourceLang = sourceLang === 'auto' ? 'auto' : getLibreTranslateCode(sourceLang);
-    const actualTargetLang = getLibreTranslateCode(targetLang);
+    // Check if LibreTranslate is available (only once)
+    if (libreAvailable === null) {
+      try {
+        const testResponse = await fetch(`${LIBRE_TRANSLATE_API}`, {
+          method: 'HEAD',
+        });
+        libreAvailable = testResponse.ok;
+        console.log(`LibreTranslate available: ${libreAvailable}`);
+      } catch (error) {
+        libreAvailable = false;
+        console.error('LibreTranslate availability check failed:', error);
+      }
+    }
     
-    // Update rate limit tracking
-    rateLimitTracking.libre.requestsThisMinute++;
-    rateLimitTracking.libre.lastRequestTime = Date.now();
-    
-    console.log(`LibreTranslate API call: source=${actualSourceLang}, target=${actualTargetLang}`);
+    if (!libreAvailable) {
+      throw new Error('LibreTranslate API is not available');
+    }
     
     const requestBody = {
       q: text,
-      source: actualSourceLang,
-      target: actualTargetLang,
-      format: 'text',
+      source: sourceLang,
+      target: targetLang,
+      format: "text",
     };
     
-    // Add API key if available
     if (LIBRE_TRANSLATE_API_KEY) {
       requestBody.api_key = LIBRE_TRANSLATE_API_KEY;
     }
     
     const response = await fetch(LIBRE_TRANSLATE_API, {
       method: 'POST',
-      body: JSON.stringify(requestBody),
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
-    
-    console.log('LibreTranslate response status:', response.status);
-    
-    // Check for rate limiting
-    if (response.status === 429) {
-      console.error('LibreTranslate rate limit reached');
-      rateLimitTracking.libre.isLimited = true;
-      
-      // Reset rate limit status after 60 seconds
-      setTimeout(() => {
-        rateLimitTracking.libre.isLimited = false;
-        rateLimitTracking.libre.requestsThisMinute = 0;
-      }, 60000);
-      
-      return text; // Return original text when rate limited
-    }
     
     if (!response.ok) {
       const errorText = await response.text();
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch (e) {
-        errorData = { error: errorText };
-      }
-      
-      console.error('LibreTranslate error:', errorData);
-      
-      // Check for rate limiting in error message
-      if (errorText.includes('Too many request') || errorText.includes('rate limit')) {
-        rateLimitTracking.libre.isLimited = true;
-        
-        // Reset rate limit status after 60 seconds
-        setTimeout(() => {
-          rateLimitTracking.libre.isLimited = false;
-          rateLimitTracking.libre.requestsThisMinute = 0;
-        }, 60000);
-      }
-      
-      throw new Error(`LibreTranslate failed: ${errorData.error || 'Unknown error'}`);
+      console.error('LibreTranslate error:', errorText);
+      throw new Error(`LibreTranslate failed: ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('LibreTranslate result:', data.translatedText.substring(0, 50));
+    
+    if (!data || !data.translatedText) {
+      throw new Error('Invalid response from LibreTranslate');
+    }
+    
     return data.translatedText;
   } catch (error) {
     console.error('LibreTranslate request failed:', error);
-    // Return original text if translation fails
-    return text;
+    throw error;
   }
+};
+
+// Dictionary of common Welsh-English translations for small words
+const welshDictionary = {
+  // Common Welsh words with English translations
+  'a': 'and',
+  'ac': 'and',
+  'i': 'to',
+  'y': 'the',
+  'yr': 'the',
+  'yn': 'in',
+  'ar': 'on',
+  'o': 'from',
+  'am': 'for',
+  'gan': 'by',
+  'ei': 'his/her',
+  'eu': 'their',
+  'mae': 'is',
+  'sydd': 'is',
+  'yw': 'is',
+  'oedd': 'was',
+  'roedd': 'was',
+  'bydd': 'will be',
+  'fydd': 'will be',
+  'wedi': 'after',
+  'cyn': 'before',
+  'gyda': 'with',
+  'heb': 'without',
+  'dros': 'over',
+  'dan': 'under',
+  'trwy': 'through',
+  'fel': 'like',
+  'felly': 'so',
+  'ond': 'but',
+  'hefyd': 'also',
+  'nawr': 'now',
+  'rwan': 'now',
+  'yma': 'here',
+  'yna': 'there',
+  'acw': 'yonder',
+  'hwn': 'this',
+  'hon': 'this',
+  'hyn': 'this',
+  'hwnnw': 'that',
+  'honno': 'that',
+  'hynny': 'that',
+  'pwy': 'who',
+  'beth': 'what',
+  'ble': 'where',
+  'pryd': 'when',
+  'sut': 'how',
+  'pam': 'why',
+  'faint': 'how much',
+  'sawl': 'how many',
+  'pa': 'which',
+  'dim': 'no',
+  'ddim': 'not',
+  'ie': 'yes',
+  'nage': 'no',
+  'na': 'no',
+  'un': 'one',
+  'dau': 'two',
+  'dwy': 'two',
+  'tri': 'three',
+  'tair': 'three',
+  'pedwar': 'four',
+  'pedair': 'four',
+  'pump': 'five',
+  
+  // Common English words with Welsh translations
+  'the': 'y',
+  'a': 'un',
+  'an': 'un',
+  'and': 'a',
+  'or': 'neu',
+  'but': 'ond',
+  'if': 'os',
+  'of': 'o',
+  'in': 'yn',
+  'on': 'ar',
+  'at': 'yn',
+  'to': 'i',
+  'for': 'ar gyfer',
+  'with': 'gyda',
+  'by': 'gan',
+  'from': 'o',
+  'up': 'i fyny',
+  'down': 'i lawr',
+  'over': 'dros',
+  'under': 'o dan',
+  'yes': 'ie',
+  'no': 'na',
+  'one': 'un',
+  'two': 'dau',
+  'three': 'tri',
+  'four': 'pedwar',
+  'five': 'pump',
+};
+
+/**
+ * Get a translation from the dictionary for common words
+ * @param {string} text - The text to translate
+ * @param {string} targetLang - The target language
+ * @param {string} sourceLang - The source language
+ * @returns {string|null} - The translation or null if not found
+ */
+const getDictionaryTranslation = (text, targetLang, sourceLang) => {
+  if (targetLang === 'cy' && sourceLang === 'en') {
+    return welshDictionary[text.toLowerCase()] || null;
+  } else if (targetLang === 'en' && sourceLang === 'cy') {
+    // Find the key in the dictionary where the value matches the text
+    for (const [key, value] of Object.entries(welshDictionary)) {
+      if (value.toLowerCase() === text.toLowerCase()) {
+        return key;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Get a translation for a common word or short phrase
+ * @param {string} text - The text to translate
+ * @param {string} targetLang - The target language
+ * @returns {string|null} - The translation or null if not found
+ */
+const getCommonWordTranslation = (text, targetLang) => {
+  const lowerText = text.toLowerCase();
+  if (targetLang === 'cy') {
+    // English to Welsh
+    const commonEnglishToWelsh = {
+      'the': 'y',
+      'a': 'un',
+      'an': 'un',
+      'and': 'a',
+      'or': 'neu',
+      'but': 'ond',
+      'if': 'os',
+      'of': 'o',
+      'in': 'yn',
+      'on': 'ar',
+      'at': 'yn',
+      'to': 'i',
+      'for': 'ar gyfer',
+      'with': 'gyda',
+      'by': 'gan',
+      'from': 'o',
+      'up': 'i fyny',
+      'down': 'i lawr',
+      'over': 'dros',
+      'under': 'o dan',
+      'yes': 'ie',
+      'no': 'na',
+      'one': 'un',
+      'two': 'dau',
+      'three': 'tri',
+      'four': 'pedwar',
+      'five': 'pump',
+      'cards': 'cardiau',
+      'card': 'cerdyn',
+      'created': 'wedi\'i greu',
+      'course': 'cwrs',
+      'general': 'cyffredinol',
+      'level': 'lefel',
+      'exam': 'arholiad',
+      'board': 'bwrdd',
+      'type': 'math',
+      'print': 'argraffu',
+      'edit': 'golygu',
+      'delete': 'dileu',
+    };
+    return commonEnglishToWelsh[lowerText] || null;
+  } else if (targetLang === 'en') {
+    // Welsh to English
+    const commonWelshToEnglish = {
+      'y': 'the',
+      'yr': 'the',
+      'a': 'and',
+      'ac': 'and',
+      'i': 'to',
+      'yn': 'in',
+      'ar': 'on',
+      'o': 'from',
+      'am': 'for',
+      'gan': 'by',
+      'gyda': 'with',
+      'heb': 'without',
+      'fel': 'like',
+      'ond': 'but',
+      'neu': 'or',
+      'ie': 'yes',
+      'na': 'no',
+      'un': 'one',
+      'dau': 'two',
+      'tri': 'three',
+      'pedwar': 'four',
+      'pump': 'five',
+      'cardiau': 'cards',
+      'cerdyn': 'card',
+      'cwrs': 'course',
+      'cyffredinol': 'general',
+      'lefel': 'level',
+      'arholiad': 'exam',
+      'bwrdd': 'board',
+      'math': 'type',
+      'argraffu': 'print',
+      'golygu': 'edit',
+      'dileu': 'delete',
+    };
+    return commonWelshToEnglish[lowerText] || null;
+  }
+  return null;
 };
 
 /**
@@ -361,7 +549,13 @@ export const checkTranslationApiAvailability = async () => {
       testUrl.searchParams.append('source', 'en');
       testUrl.searchParams.append('target', 'cy');
       
-      const response = await fetch(testUrl.toString());
+      const response = await fetch(testUrl.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        mode: 'cors'
+      });
       result.welsh = response.ok;
     }
   } catch (error) {
