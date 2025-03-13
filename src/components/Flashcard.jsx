@@ -133,14 +133,9 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
   // Determine if this is a multiple choice card
   const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options) && card.options.length > 0;
   
-  // For debugging
-  if (card.questionType === 'multiple_choice') {
-    console.log(`Flashcard ${card.id || 'unknown'} - Multiple choice:`, { 
-      questionType: card.questionType,
-      hasOptions: Boolean(card.options),
-      optionsLength: card.options?.length,
-      options: card.options
-    });
+  // Log for debugging
+  if (isMultipleChoice) {
+    console.log(`Multiple choice card: ${card.id}, options:`, card.options);
   }
   
   // Check if card has additional information
@@ -216,7 +211,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <ScaledText className="question-title" maxFontSize={16}>
                   <AutoTranslatedText content={card.front || card.question} html={true} />
                 </ScaledText>
-                <div className="multiple-choice-container">
+                <div className="multiple-choice-container" style={{ overflow: 'auto', maxHeight: '60%' }}>
                   {card.options && card.options.length > 0 ? (
                     <MultipleChoiceOptions 
                       options={card.options} 
@@ -224,7 +219,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                       disabled={true}
                     />
                   ) : (
-                    <div className="missing-options-error">
+                    <div className="missing-options-error" style={{ color: textColor }}>
                       This card is marked as multiple choice but has no options
                     </div>
                   )}
@@ -242,7 +237,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <>
                 {isMultipleChoice ? (
                   <>
-                    <h4 className="answer-heading">Correct Answer:</h4>
+                    <h4 className="answer-heading" style={{ color: textColor }}>Correct Answer:</h4>
                     <ScaledText maxFontSize={16}>
                       <AutoTranslatedText 
                         content={getCorrectAnswer()} 
