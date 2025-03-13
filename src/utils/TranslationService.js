@@ -10,6 +10,9 @@ const WELSH_TRANSLATE_API = "http://api.techiaith.org/translate-smt/v1/";
 const WELSH_TRANSLATE_API_KEY = process.env.REACT_APP_WELSH_TRANSLATE_API_KEY;
 const WELSH_TRANSLATE_ENGINE = "CofnodYCynulliad"; // Default engine
 
+// Create a simple in-memory cache for translations to avoid redundant API calls
+const translationCache = {};
+
 /**
  * Translates text using the most appropriate translation API based on the language pair
  * 
@@ -21,12 +24,16 @@ const WELSH_TRANSLATE_ENGINE = "CofnodYCynulliad"; // Default engine
 export const translateText = async (text, targetLang, sourceLang = 'en') => {
   if (!text || text.trim() === '') return '';
   
+  console.log(`TranslationService: Translating from ${sourceLang} to ${targetLang}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+  
   // Use Welsh API for Welsh <-> English translations
   if ((targetLang === 'cy' && sourceLang === 'en') || 
       (targetLang === 'en' && sourceLang === 'cy')) {
+    console.log('TranslationService: Using Welsh API');
     return translateWithWelshAPI(text, targetLang, sourceLang);
   } else {
     // Use LibreTranslate for all other language pairs
+    console.log('TranslationService: Using LibreTranslate API');
     return translateWithLibreTranslate(text, targetLang, sourceLang);
   }
 };
@@ -47,6 +54,8 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
       throw new Error('Welsh Translation API key not found');
     }
     
+    console.log(`Welsh API call: ${WELSH_TRANSLATE_API}?api_key=***&q=${encodeURIComponent(text.substring(0, 20))}...`);
+    
     // Construct the API URL with query parameters
     const url = new URL(WELSH_TRANSLATE_API);
     url.searchParams.append('api_key', WELSH_TRANSLATE_API_KEY);
@@ -58,18 +67,31 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
     // Make the API request
     const response = await fetch(url.toString());
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Welsh translation error:', errorData);
-      throw new Error(`Welsh translation failed: ${errorData.errors ? errorData.errors[0] : 'Unknown error'}`);
+    console.log('Welsh API response status:', response.status);
+    
+    // Get the response as text first for debugging
+    const responseText = await response.text();
+    console.log('Welsh API response:', responseText);
+    
+    // Parse the JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse Welsh API response as JSON:', parseError);
+      throw new Error(`Welsh translation failed: Invalid response format`);
     }
     
-    const data = await response.json();
+    if (!response.ok) {
+      console.error('Welsh translation error:', data);
+      throw new Error(`Welsh translation failed: ${data.errors ? data.errors[0] : 'Unknown error'}`);
+    }
     
     if (!data.success) {
       throw new Error(`Welsh translation failed: ${data.errors ? data.errors[0] : 'Unknown error'}`);
     }
     
+    console.log('Welsh translation result:', data.translations[0].translatedText);
     return data.translations[0].translatedText;
   } catch (error) {
     console.error('Welsh translation request failed:', error);
@@ -91,6 +113,8 @@ const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
     const actualSourceLang = sourceLang === 'auto' ? 'auto' : getLibreTranslateCode(sourceLang);
     const actualTargetLang = getLibreTranslateCode(targetLang);
     
+    console.log(`LibreTranslate API call: source=${actualSourceLang}, target=${actualTargetLang}`);
+    
     const requestBody = {
       q: text,
       source: actualSourceLang,
@@ -111,6 +135,8 @@ const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
       }
     });
     
+    console.log('LibreTranslate response status:', response.status);
+    
     if (!response.ok) {
       const errorData = await response.json();
       console.error('LibreTranslate error:', errorData);
@@ -118,6 +144,7 @@ const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
     }
     
     const data = await response.json();
+    console.log('LibreTranslate result:', data.translatedText.substring(0, 50));
     return data.translatedText;
   } catch (error) {
     console.error('LibreTranslate request failed:', error);
@@ -203,16 +230,35 @@ export const checkTranslationApiAvailability = async () => {
  * @returns {Promise<string>} - The translated text or original text if languages match
  */
 export const autoTranslateText = async (text, sourceLang = 'en', currentLang) => {
-  // Don't translate if the current language is the same as the source language
-  if (!text || currentLang === sourceLang) {
+  // Don't translate if the text is empty
+  if (!text || text.trim() === '') {
     return text;
   }
   
+  // Don't translate if the current language is the same as the source language
+  if (currentLang === sourceLang) {
+    return text;
+  }
+  
+  // Create a cache key
+  const cacheKey = `${text}|${sourceLang}|${currentLang}`;
+  
+  // Check if we have a cached translation
+  if (translationCache[cacheKey]) {
+    return translationCache[cacheKey];
+  }
+  
   try {
-    return await translateText(text, currentLang, sourceLang);
+    console.log(`AutoTranslate: Translating from ${sourceLang} to ${currentLang}`);
+    const translatedText = await translateText(text, currentLang, sourceLang);
+    
+    // Cache the result
+    translationCache[cacheKey] = translatedText;
+    
+    return translatedText;
   } catch (error) {
     console.error('Auto-translation failed:', error);
-    return text;
+    return text; // Return original text on failure
   }
 };
 

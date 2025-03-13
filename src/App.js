@@ -9,6 +9,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import Header from "./components/Header";
 import AICardGenerator from './components/AICardGenerator';
 import PrintModal from './components/PrintModal';
+import GlobalTranslationWrapper from './components/GlobalTranslationWrapper';
 import { getContrastColor, formatDate, calculateNextReviewDate, isCardDueForReview } from './helper';
 
 // API Keys and constants
@@ -1043,138 +1044,140 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Header
-        userInfo={getUserInfo()}
-        currentView={view}
-        onViewChange={setView}
-        onSave={saveData}
-        isSaving={isSaving}
-      />
+    <GlobalTranslationWrapper>
+      <div className="app">
+        <Header
+          userInfo={getUserInfo()}
+          currentView={view}
+          onViewChange={setView}
+          onSave={saveData}
+          isSaving={isSaving}
+        />
 
-      {statusMessage && <div className="status-message">{statusMessage}</div>}
+        {statusMessage && <div className="status-message">{statusMessage}</div>}
 
-      {view === "cardBank" && (
-        <div className="card-bank-view">
-          {printModalOpen && (
-            <PrintModal 
-              cards={cardsToPrint} 
-              title={printTitle} 
-              onClose={() => setPrintModalOpen(false)} 
-            />
-          )}
-          
-          {/* Card Creation Modal */}
-          {cardCreationModalOpen && (
-            <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
-                <h2>Create Flashcards</h2>
-                <div className="modal-options">
-                  <button 
-                    className="primary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("aiGenerator");
-                    }}
-                  >
-                    <span className="button-icon">🤖</span> Generate Cards with AI
-                  </button>
-                  <div className="option-divider">or</div>
-                  <button 
-                    className="secondary-button"
-                    onClick={() => {
-                      setCardCreationModalOpen(false);
-                      setView("manualCreate");
-                    }}
-                  >
-                    <span className="button-icon">✍️</span> Create Cards Manually
-                  </button>
+        {view === "cardBank" && (
+          <div className="card-bank-view">
+            {printModalOpen && (
+              <PrintModal 
+                cards={cardsToPrint} 
+                title={printTitle} 
+                onClose={() => setPrintModalOpen(false)} 
+              />
+            )}
+            
+            {/* Card Creation Modal */}
+            {cardCreationModalOpen && (
+              <div className="modal-overlay" onClick={() => setCardCreationModalOpen(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <button className="modal-close-btn" onClick={() => setCardCreationModalOpen(false)}>×</button>
+                  <h2>Create Flashcards</h2>
+                  <div className="modal-options">
+                    <button 
+                      className="primary-button"
+                      onClick={() => {
+                        setCardCreationModalOpen(false);
+                        setView("aiGenerator");
+                      }}
+                    >
+                      <span className="button-icon">🤖</span> Generate Cards with AI
+                    </button>
+                    <div className="option-divider">or</div>
+                    <button 
+                      className="secondary-button"
+                      onClick={() => {
+                        setCardCreationModalOpen(false);
+                        setView("manualCreate");
+                      }}
+                    >
+                      <span className="button-icon">✍️</span> Create Cards Manually
+                    </button>
+                  </div>
                 </div>
               </div>
+            )}
+            
+            <div className="bank-controls">
+              <button
+                className="primary-button"
+                onClick={() => setCardCreationModalOpen(true)}
+              >
+                <span className="button-icon">✏️</span> Create New Card
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() => setView("spacedRepetition")}
+              >
+                <span className="button-icon">🧠</span> Start Spaced Repetition
+              </button>
+              <button
+                className="secondary-button print-all-btn"
+                onClick={handlePrintAllCards}
+              >
+                <span className="button-icon">🖨️</span> Print All Cards
+              </button>
             </div>
-          )}
-          
-          <div className="bank-controls">
-            <button
-              className="primary-button"
-              onClick={() => setCardCreationModalOpen(true)}
-            >
-              <span className="button-icon">✏️</span> Create New Card
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => setView("spacedRepetition")}
-            >
-              <span className="button-icon">🧠</span> Start Spaced Repetition
-            </button>
-            <button
-              className="secondary-button print-all-btn"
-              onClick={handlePrintAllCards}
-            >
-              <span className="button-icon">🖨️</span> Print All Cards
-            </button>
+
+            <div className="bank-container">
+              <div className="bank-sidebar">
+                <SubjectsList
+                  subjects={getSubjects()}
+                  selectedSubject={selectedSubject}
+                  onSelectSubject={setSelectedSubject}
+                  getColorForSubject={(subject) =>
+                    getColorForSubjectTopic(subject)
+                  }
+                  updateColorMapping={updateColorMapping}
+                  refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
+                />
+              </div>
+
+              <div className="bank-content">
+                <FlashcardList
+                  cards={getFilteredCards()}
+                  onDeleteCard={deleteCard}
+                  onUpdateCard={updateCard}
+                />
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="bank-container">
-            <div className="bank-sidebar">
-              <SubjectsList
-                subjects={getSubjects()}
-                selectedSubject={selectedSubject}
-                onSelectSubject={setSelectedSubject}
-                getColorForSubject={(subject) =>
-                  getColorForSubjectTopic(subject)
-                }
-                updateColorMapping={updateColorMapping}
-                refreshSubjectAndTopicColors={refreshSubjectAndTopicColors}
-              />
-            </div>
-
-            <div className="bank-content">
-              <FlashcardList
-                cards={getFilteredCards()}
-                onDeleteCard={deleteCard}
-                onUpdateCard={updateCard}
-              />
-            </div>
+        {view === "manualCreate" && (
+          <div className="create-card-container">
+            <CardCreator
+              onAddCard={addCard}
+              onCancel={() => setView("cardBank")}
+              subjects={getSubjects()}
+              getTopicsForSubject={getUserTopicsForSubject}
+              currentColor={currentSubjectColor}
+              onColorChange={setCurrentSubjectColor}
+              getColorForSubjectTopic={getColorForSubjectTopic}
+              updateColorMapping={updateColorMapping}
+            />
           </div>
-        </div>
-      )}
+        )}
 
-      {view === "manualCreate" && (
-        <div className="create-card-container">
-          <CardCreator
+        {view === "aiGenerator" && (
+          <AICardGenerator
             onAddCard={addCard}
-            onCancel={() => setView("cardBank")}
+            onClose={() => setView("cardBank")}
             subjects={getSubjects()}
-            getTopicsForSubject={getUserTopicsForSubject}
-            currentColor={currentSubjectColor}
-            onColorChange={setCurrentSubjectColor}
-            getColorForSubjectTopic={getColorForSubjectTopic}
-            updateColorMapping={updateColorMapping}
           />
-        </div>
-      )}
+        )}
 
-      {view === "aiGenerator" && (
-        <AICardGenerator
-          onAddCard={addCard}
-          onClose={() => setView("cardBank")}
-          subjects={getSubjects()}
-        />
-      )}
-
-      {view === "spacedRepetition" && (
-        <SpacedRepetition
-          cards={getCardsForCurrentBox()}
-          currentBox={currentBox}
-          spacedRepetitionData={spacedRepetitionData}
-          onSelectBox={setCurrentBox}
-          onMoveCard={moveCardToBox}
-          onReturnToBank={() => setView("cardBank")}
-        />
-      )}
-    </div>
+        {view === "spacedRepetition" && (
+          <SpacedRepetition
+            cards={getCardsForCurrentBox()}
+            currentBox={currentBox}
+            spacedRepetitionData={spacedRepetitionData}
+            onSelectBox={setCurrentBox}
+            onMoveCard={moveCardToBox}
+            onReturnToBank={() => setView("cardBank")}
+          />
+        )}
+      </div>
+    </GlobalTranslationWrapper>
   );
 }
 

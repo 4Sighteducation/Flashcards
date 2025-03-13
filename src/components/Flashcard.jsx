@@ -171,7 +171,11 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <ScaledText className="question-title" maxFontSize={16}>
                   <AutoTranslatedText content={card.front || card.question} html={true} />
                 </ScaledText>
-                <MultipleChoiceOptions options={card.options} preview={preview} />
+                <MultipleChoiceOptions 
+                  options={card.options || []} 
+                  preview={preview} 
+                  disabled={true}
+                />
               </>
             ) : (
               <ScaledText maxFontSize={16}>
