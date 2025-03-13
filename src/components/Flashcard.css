@@ -1,11 +1,11 @@
 .flashcard {
-  width: 250px;
-  height: 150px;
-  margin: 10px;
+  width: 320px;
+  height: 200px;
+  margin: 15px;
   position: relative;
   perspective: 1000px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 2px solid transparent;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
@@ -76,29 +76,67 @@
 
 /* Question title specifically for multiple choice */
 .question-title {
-  height: 40%;
-  margin-bottom: 5px;
+  height: 30%;
+  margin-bottom: 8px;
+  padding: 0 5px;
 }
 
 .question-title .scaled-text {
   font-weight: bold;
 }
 
-/* Options container for multiple choice */
-.options-container {
-  height: 60%;
-  overflow: hidden;
-}
-
-.options-container ol {
-  margin: 0;
-  padding-left: 20px;
-  text-align: left;
-}
-
-.options-container li {
+/* Multiple choice container */
+.multiple-choice-container {
+  height: 70%;
+  overflow: auto;
+  padding: 0 5px;
   margin-bottom: 5px;
-  line-height: 1.2;
+  scrollbar-width: thin;
+}
+
+.multiple-choice-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.multiple-choice-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+/* Topic cards - container for flashcards */
+.topic-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  padding: 15px;
+  gap: 15px;
+}
+
+.expanded-topic {
+  max-height: unset !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* Responsive design */
+@media (max-width: 1100px) {
+  .flashcard {
+    width: 280px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flashcard {
+    width: 100%;
+    max-width: 320px;
+    height: 200px;
+    margin: 10px auto;
+  }
+  
+  .topic-cards {
+    justify-content: center;
+  }
 }
 
 /* Box indicator */
@@ -230,15 +268,6 @@
 
 .scaled-text li {
   margin-bottom: 2px;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .flashcard {
-    width: 100%;
-    max-width: 300px;
-    margin: 10px auto;
-  }
 }
 
 /* Add styles for the info button */
@@ -483,14 +512,6 @@
 }
 
 /* Multiple choice styles */
-.multiple-choice-container {
-  width: 100%;
-  max-height: 75%;
-  overflow-y: auto;
-  padding: 0 10px;
-  margin-top: 10px;
-}
-
 .missing-options-error {
   background-color: #f8d7da;
   color: #721c24;

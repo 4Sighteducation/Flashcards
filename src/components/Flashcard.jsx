@@ -219,7 +219,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <ScaledText className="question-title" maxFontSize={16}>
                   <AutoTranslatedText content={card.front || card.question} html={true} />
                 </ScaledText>
-                <div className="multiple-choice-container" style={{ overflow: 'auto', maxHeight: '60%' }}>
+                <div className="multiple-choice-container">
                   {card.options && card.options.length > 0 ? (
                     <MultipleChoiceOptions 
                       options={card.options} 
@@ -234,7 +234,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 </div>
               </>
             ) : (
-              <ScaledText maxFontSize={16}>
+              <ScaledText maxFontSize={18}>
                 <AutoTranslatedText content={card.front || card.question || t('cards.noQuestion')} html={true} />
               </ScaledText>
             )}
@@ -245,10 +245,10 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
               <>
                 {isMultipleChoice ? (
                   <>
-                    <h4 className="answer-heading" style={{ color: textColor }}>
+                    <h4 className="answer-heading" style={{ color: textColor, marginTop: 0 }}>
                       <AutoTranslatedText content={t('cards.correctAnswer')} />:
                     </h4>
-                    <ScaledText maxFontSize={16}>
+                    <ScaledText maxFontSize={18}>
                       <AutoTranslatedText 
                         content={getCorrectAnswer()} 
                         html={true} 
@@ -256,7 +256,7 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                     </ScaledText>
                   </>
                 ) : (
-                  <ScaledText maxFontSize={16}>
+                  <ScaledText maxFontSize={18}>
                     <AutoTranslatedText 
                       content={card.back || card.answer || t('cards.noAnswer')} 
                       html={true} 

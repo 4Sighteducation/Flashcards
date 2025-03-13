@@ -149,13 +149,17 @@
 .topic-cards {
   display: flex;
   flex-wrap: wrap;
-  padding: 15px;
-  gap: 15px;
   justify-content: center;
-  background-color: #fafafa;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  overflow: visible;
+  height: auto;
+  max-height: 1200px;
+  transition: all 0.3s ease;
+}
+
+.expanded-topic {
   max-height: none;
-  overflow-y: visible;
+  overflow: visible;
 }
 
 .empty-card-bank {
@@ -284,45 +288,22 @@
   }
   
   .topic-cards {
-    height: auto;
-    min-height: auto;
-    max-height: none;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: touch;
-    padding: 15px;
-    display: flex;
     flex-direction: column;
     align-items: center;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    max-height: 800px;
+    overflow-y: auto;
+    justify-content: flex-start;
   }
   
   .flashcard {
-    width: 95% !important;
-    margin: 0 0 15px 0 !important;
-    min-height: 250px;
-    max-width: 100%;
-  }
-  
-  .topic-cards::-webkit-scrollbar {
-    width: 6px;
-    background-color: rgba(0,0,0,0.05);
-  }
-  
-  .topic-cards::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 3px;
-  }
-  
-  .print-all-container {
-    justify-content: center;
-    margin-bottom: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin: 10px 0;
   }
   
   .expanded-topic {
-    flex: 1;
-    min-height: 350px;
-    background-color: #f9f9f9;
-    border-radius: 0 0 8px 8px;
+    max-height: none;
+    overflow: visible;
   }
 
   /* Adjust card count and print button for smaller screens */
