@@ -38,6 +38,10 @@
     "no": "No",
     "print": "Print",
     "printAll": "Print All Cards",
+    "printSubject": "Print Subject Cards",
+    "printTopic": "Print Topic Cards",
+    "cardCount": "{{count}} cards",
+    "created": "Created: {{date}}",
     "deleteCard": "Delete card",
     "changeColor": "Change color",
     "viewInfo": "View additional information",
@@ -128,5 +132,107 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
+  },
+  "ai": {
+    "title": "AI Card Generator",
+    "wizard": "Card Creation Wizard",
+    "questionTypes": {
+      "shortAnswer": "Short Answer",
+      "multipleChoice": "Multiple Choice",
+      "essay": "Essay",
+      "acronym": "Acronym"
+    },
+    "examBoards": {
+      "aqa": "AQA",
+      "edexcel": "Edexcel",
+      "ocr": "OCR",
+      "wjec": "WJEC",
+      "ccea": "CCEA",
+      "ib": "International Baccalaureate"
+    },
+    "examTypes": {
+      "gcse": "GCSE",
+      "aLevel": "A-Level"
+    },
+    "steps": {
+      "examType": {
+        "title": "Select Exam Type",
+        "placeholder": "-- Select Exam Type --"
+      },
+      "examBoard": {
+        "title": "Select Exam Board",
+        "placeholder": "-- Select Exam Board --"
+      },
+      "subject": {
+        "title": "Select Subject",
+        "placeholder": "-- Select Subject --",
+        "divider": "OR",
+        "newSubjectLabel": "Enter New Subject",
+        "newSubjectPlaceholder": "Enter custom subject name"
+      },
+      "topic": {
+        "title": "Select a Topic",
+        "label": "Topic",
+        "placeholder": "Enter topic name",
+        "generate": "Generate Topics",
+        "regenerate": "Regenerate Topics",
+        "save": "Save Topic List",
+        "custom": "Or enter a custom topic:"
+      },
+      "numCards": {
+        "title": "Number of Cards",
+        "helper": "Select between 1 and 20 cards"
+      },
+      "questionType": {
+        "title": "Select Question Type",
+        "shortAnswerDesc": "Short answer questions test recall of key facts and concepts.",
+        "multipleChoiceDesc": "Multiple choice questions provide options to choose from, testing recognition.",
+        "essayDesc": "Essay style questions test deeper understanding and application of knowledge.",
+        "acronymDesc": "Acronym questions help memorize lists or sequences using memorable letter patterns."
+      },
+      "additionalInstructions": {
+        "title": "Additional Instructions",
+        "placeholder": "Enter any specific instructions for the AI (optional)"
+      },
+      "confirmation": {
+        "title": "Review Your Selections",
+        "examType": "Exam Type:",
+        "examBoard": "Exam Board:",
+        "subject": "Subject:",
+        "topic": "Topic:",
+        "numCards": "Number of Cards:",
+        "questionType": "Question Type:"
+      },
+      "generating": {
+        "title": "Generating Your Flashcards",
+        "message": "Creating {{count}} flashcards for {{board}} {{type}} {{subject}}...",
+        "subtext": "Our AI is analyzing the curriculum and crafting high-quality questions tailored to your specifications."
+      },
+      "preview": {
+        "title": "Preview Generated Cards",
+        "error": "There was an error generating your cards:",
+        "noCards": "No cards were generated. Please try again with different parameters."
+      },
+      "unknown": "Unknown step"
+    },
+    "buttons": {
+      "next": "Next",
+      "previous": "Previous",
+      "cancel": "Cancel",
+      "generate": "Generate Cards",
+      "save": "Save All Cards",
+      "regenerate": "Regenerate",
+      "edit": "Edit Cards"
+    },
+    "modal": {
+      "title": "AI Card Generator",
+      "close": "Close"
+    },
+    "messages": {
+      "generatingTopics": "Generating topics...",
+      "savingCards": "Saving cards...",
+      "cardsAdded": "{{count}} cards added to your collection!",
+      "error": "Error: {{message}}"
+    }
   }
 } 

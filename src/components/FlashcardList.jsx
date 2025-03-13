@@ -275,13 +275,14 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                   </div>
                 </div>
                 <span className="card-count">
-                  (<AutoTranslatedText content={`${Object.values(groupedCards[subject]).flat().length} cards`} />)
+                  (<AutoTranslatedText content={t('cards.cardCount', { count: Object.values(groupedCards[subject]).flat().length })} />)
                 </span>
               </div>
               <button 
                 className="print-btn" 
                 onClick={(e) => handlePrintSubject(subject, e)}
                 style={{ color: textColor }}
+                title={t('cards.print')}
               >
                 <span className="print-icon">🖨️</span>
               </button>
@@ -307,18 +308,19 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
                         <h3><AutoTranslatedText content={topic} /></h3>
                         {topicDate && (
                           <span className="topic-date">
-                            <AutoTranslatedText content={`Created: ${topicDate}`} />
+                            <AutoTranslatedText content={t('cards.created', { date: topicDate })} />
                           </span>
                         )}
                       </div>
                       <span className="card-count">
-                        (<AutoTranslatedText content={`${groupedCards[subject][topic].length} cards`} />)
+                        (<AutoTranslatedText content={t('cards.cardCount', { count: groupedCards[subject][topic].length })} />)
                       </span>
                     </div>
                     <button 
                       className="print-btn" 
                       onClick={(e) => handlePrintTopic(subject, topic, e)}
                       style={{ color: textColor }}
+                      title={t('cards.print')}
                     >
                       <span className="print-icon">🖨️</span>
                     </button>

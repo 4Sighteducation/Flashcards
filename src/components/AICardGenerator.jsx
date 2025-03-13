@@ -2,27 +2,29 @@ import React, { useState, useEffect } from "react";
 import "./AICardGenerator.css";
 import Flashcard from './Flashcard';
 import { generateTopicPrompt } from '../prompts/topicListPrompt';
+import { useTranslation } from 'react-i18next';
+import AutoTranslatedText from './AutoTranslatedText';
 
 // Constants for question types and exam boards
 const QUESTION_TYPES = [
-  { value: "short_answer", label: "Short Answer" },
-  { value: "multiple_choice", label: "Multiple Choice" },
-  { value: "essay", label: "Essay Style" },
-  { value: "acronym", label: "Acronym" }
+  { value: "short_answer", label: "ai.questionTypes.shortAnswer" },
+  { value: "multiple_choice", label: "ai.questionTypes.multipleChoice" },
+  { value: "essay", label: "ai.questionTypes.essay" },
+  { value: "acronym", label: "ai.questionTypes.acronym" }
 ];
 
 const EXAM_BOARDS = [
-  { value: "AQA", label: "AQA" },
-  { value: "Edexcel", label: "Edexcel" },
-  { value: "OCR", label: "OCR" },
-  { value: "WJEC", label: "WJEC" },
-  { value: "CCEA", label: "CCEA" },
-  { value: "International Baccalaureate", label: "IB" }
+  { value: "AQA", label: "ai.examBoards.aqa" },
+  { value: "Edexcel", label: "ai.examBoards.edexcel" },
+  { value: "OCR", label: "ai.examBoards.ocr" },
+  { value: "WJEC", label: "ai.examBoards.wjec" },
+  { value: "CCEA", label: "ai.examBoards.ccea" },
+  { value: "International Baccalaureate", label: "ai.examBoards.ib" }
 ];
 
 const EXAM_TYPES = [
-  { value: "GCSE", label: "GCSE" },
-  { value: "A-Level", label: "A-Level" }
+  { value: "GCSE", label: "ai.examTypes.gcse" },
+  { value: "A-Level", label: "ai.examTypes.aLevel" }
 ];
 
 // Color palette for cards
@@ -40,6 +42,8 @@ const KNACK_APP_ID = process.env.REACT_APP_KNACK_APP_ID || "64fc50bc3cd0ac00254b
 const KNACK_API_KEY = process.env.REACT_APP_KNACK_API_KEY || "knack-api-key";
 
 const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) => {
+  const { t } = useTranslation();
+  
   // Step management state
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps, setTotalSteps] = useState(7);
@@ -54,6 +58,7 @@ const AICardGenerator = ({ onAddCard, onClose, subjects = [], auth, userId }) =>
     newTopic: "",
     numCards: 5,
     questionType: "",
+    additionalInstructions: "",
     subjectColor: BRIGHT_COLORS[0],
     generatedCards: []
   });
@@ -1189,7 +1194,7 @@ Use this format for different question types:
       case 1: // Exam Type
         return (
           <div className="step-content">
-            <h2>Select Exam Type</h2>
+            <h2><AutoTranslatedText content={t('ai.steps.examType.title')} /></h2>
             <div className="form-group">
               <select 
                 name="examType" 
@@ -1197,10 +1202,10 @@ Use this format for different question types:
                 onChange={handleChange}
                 required
               >
-                <option value="">-- Select Exam Type --</option>
+                <option value=""><AutoTranslatedText content={t('ai.steps.examType.placeholder')} /></option>
                 {EXAM_TYPES.map(type => (
                   <option key={type.value} value={type.value}>
-                    {type.label}
+                    <AutoTranslatedText content={t(type.label)} />
                   </option>
                 ))}
               </select>
@@ -1211,7 +1216,7 @@ Use this format for different question types:
       case 2: // Exam Board
         return (
           <div className="step-content">
-            <h2>Select Exam Board</h2>
+            <h2><AutoTranslatedText content={t('ai.steps.examBoard.title')} /></h2>
             <div className="form-group">
               <select 
                 name="examBoard" 
@@ -1219,10 +1224,10 @@ Use this format for different question types:
                 onChange={handleChange}
                 required
               >
-                <option value="">-- Select Exam Board --</option>
+                <option value=""><AutoTranslatedText content={t('ai.steps.examBoard.placeholder')} /></option>
                 {EXAM_BOARDS.map(board => (
                   <option key={board.value} value={board.value}>
-                    {board.label}
+                    <AutoTranslatedText content={t(board.label)} />
                   </option>
                 ))}
               </select>
@@ -1233,14 +1238,14 @@ Use this format for different question types:
       case 3: // Subject
         return (
           <div className="step-content">
-            <h2>Select Subject</h2>
+            <h2><AutoTranslatedText content={t('ai.steps.subject.title')} /></h2>
             <div className="form-group">
               <select 
                 name="subject" 
                 value={formData.subject} 
                 onChange={handleChange}
               >
-                <option value="">-- Select Subject --</option>
+                <option value=""><AutoTranslatedText content={t('ai.steps.subject.placeholder')} /></option>
                 {availableSubjects.map(subject => (
                   <option key={subject} value={subject}>
                     {subject}
@@ -1249,16 +1254,16 @@ Use this format for different question types:
               </select>
               
               <div className="form-divider">
-                <span>OR</span>
+                <span><AutoTranslatedText content={t('ai.steps.subject.divider')} /></span>
               </div>
               
-              <label>Enter New Subject</label>
+              <label><AutoTranslatedText content={t('ai.steps.subject.newSubjectLabel')} /></label>
               <input 
                 type="text" 
                 name="newSubject" 
                 value={formData.newSubject} 
                 onChange={handleChange}
-                placeholder="Enter custom subject name" 
+                placeholder={t('ai.steps.subject.newSubjectPlaceholder')}
               />
             </div>
           </div>
@@ -1267,10 +1272,9 @@ Use this format for different question types:
       case 4: // Topic
         return (
           <div className="step-content">
-            <h2>Select a Topic</h2>
-            
+            <h2><AutoTranslatedText content={t('ai.steps.topic.title')} /></h2>
             <div className="form-group">
-              <label>Topic</label>
+              <label><AutoTranslatedText content={t('ai.steps.topic.label')} /></label>
               {renderTopicSelectionUI()}
             </div>
             
@@ -1282,7 +1286,7 @@ Use this format for different question types:
       case 5: // Number of Cards
         return (
           <div className="step-content">
-            <h2>Number of Cards</h2>
+            <h2><AutoTranslatedText content={t('ai.steps.numCards.title')} /></h2>
             <div className="form-group">
               <input 
                 type="number" 
@@ -1291,9 +1295,9 @@ Use this format for different question types:
                 onChange={handleChange}
                 min="1" 
                 max="20" 
-                required 
+                required
               />
-              <p className="helper-text">Select between 1 and 20 cards</p>
+              <p className="helper-text"><AutoTranslatedText content={t('ai.steps.numCards.helper')} /></p>
             </div>
           </div>
         );
@@ -1301,7 +1305,7 @@ Use this format for different question types:
       case 6: // Question Type
         return (
           <div className="step-content">
-            <h2>Select Question Type</h2>
+            <h2><AutoTranslatedText content={t('ai.steps.questionType.title')} /></h2>
             <div className="question-type-selector">
               {QUESTION_TYPES.map(type => (
                 <div key={type.value} className="question-type-option">
@@ -1314,7 +1318,7 @@ Use this format for different question types:
                     onChange={handleChange}
                   />
                   <label htmlFor={`question-type-${type.value}`}>
-                    {type.label}
+                    <AutoTranslatedText content={t(type.label)} />
                   </label>
                 </div>
               ))}
@@ -1322,26 +1326,100 @@ Use this format for different question types:
             
             <div className="question-type-description">
               {formData.questionType === "short_answer" && (
-                <p>Short answer questions test recall of key facts and concepts.</p>
+                <p><AutoTranslatedText content={t('ai.steps.questionType.shortAnswerDesc')} /></p>
               )}
               {formData.questionType === "multiple_choice" && (
-                <p>Multiple choice questions provide options to choose from, testing recognition.</p>
+                <p><AutoTranslatedText content={t('ai.steps.questionType.multipleChoiceDesc')} /></p>
               )}
               {formData.questionType === "essay" && (
-                <p>Essay style questions test deeper understanding and application of knowledge.</p>
+                <p><AutoTranslatedText content={t('ai.steps.questionType.essayDesc')} /></p>
               )}
               {formData.questionType === "acronym" && (
-                <p>Acronym questions help memorize lists or sequences using memorable letter patterns.</p>
+                <p><AutoTranslatedText content={t('ai.steps.questionType.acronymDesc')} /></p>
               )}
             </div>
           </div>
         );
         
-      case 7: // Confirmation and Generated Cards
-        return renderConfirmation();
+      case 7: // Additional Instructions and Confirmation
+        return (
+          <div className="step-content">
+            <h2><AutoTranslatedText content={t('ai.steps.additionalInstructions.title')} /></h2>
+            <div className="form-group">
+              <textarea 
+                name="additionalInstructions" 
+                value={formData.additionalInstructions} 
+                onChange={handleChange}
+                placeholder={t('ai.steps.additionalInstructions.placeholder')}
+                rows="4"
+              />
+            </div>
+            
+            <div className="confirmation-container">
+              <h3><AutoTranslatedText content={t('ai.steps.confirmation.title')} /></h3>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.examType')} /></span>
+                <span className="value">{formData.examType}</span>
+              </div>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.examBoard')} /></span>
+                <span className="value">{formData.examBoard}</span>
+              </div>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.subject')} /></span>
+                <span className="value">{formData.newSubject || formData.subject}</span>
+              </div>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.topic')} /></span>
+                <span className="value">{formData.topic}</span>
+              </div>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.numCards')} /></span>
+                <span className="value">{formData.numCards}</span>
+              </div>
+              
+              <div className="confirmation-item">
+                <span className="label"><AutoTranslatedText content={t('ai.steps.confirmation.questionType')} /></span>
+                <span className="value">
+                  {QUESTION_TYPES.find(type => type.value === formData.questionType)?.label &&
+                    <AutoTranslatedText content={t(QUESTION_TYPES.find(type => type.value === formData.questionType)?.label)} />
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 8: // Generating Cards
+        return (
+          <div className="step-content generating">
+            <h2><AutoTranslatedText content={t('ai.steps.generating.title')} /></h2>
+            <div className="loading-indicator">
+              <div className="spinner"></div>
+              <p>
+                <AutoTranslatedText 
+                  content={t('ai.steps.generating.message', { 
+                    count: formData.numCards, 
+                    board: formData.examBoard, 
+                    type: formData.examType, 
+                    subject: formData.newSubject || formData.subject 
+                  })} 
+                />
+              </p>
+              <p className="loading-subtext">
+                <AutoTranslatedText content={t('ai.steps.generating.subtext')} />
+              </p>
+            </div>
+          </div>
+        );
         
       default:
-        return <div>Unknown step</div>;
+        return <div><AutoTranslatedText content={t('ai.steps.unknown')} /></div>;
     }
   };
 
@@ -1513,7 +1591,7 @@ Use this format for different question types:
           
           <div className="confirmation-item">
             <span className="label">Topic:</span>
-            <span className="value">{formData.newTopic || formData.topic}</span>
+            <span className="value">{formData.topic}</span>
           </div>
           
           <div className="confirmation-item">

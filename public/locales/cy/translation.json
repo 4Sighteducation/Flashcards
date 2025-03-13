@@ -37,7 +37,22 @@
     "yes": "Ydw",
     "no": "Na",
     "print": "Argraffu",
-    "printAll": "Argraffu Pob Cerdyn"
+    "printAll": "Argraffu Pob Cerdyn",
+    "printSubject": "Argraffu Cardiau Pwnc",
+    "printTopic": "Argraffu Cardiau Testun",
+    "cardCount": "{{count}} cerdyn",
+    "created": "Crëwyd: {{date}}",
+    "deleteCard": "Dileu cerdyn",
+    "changeColor": "Newid lliw",
+    "viewInfo": "Gweld gwybodaeth ychwanegol",
+    "deleteConfirm": "Dileu?",
+    "noOptionsError": "Mae'r cerdyn hwn wedi'i farcio fel dewis lluosog ond nid oes ganddo opsiynau",
+    "noQuestion": "Dim cwestiwn",
+    "correctAnswer": "Ateb Cywir",
+    "noAnswer": "Dim ateb wedi'i ddarparu",
+    "additionalInfo": "Gwybodaeth Ychwanegol",
+    "noAdditionalInfo": "Dim gwybodaeth ychwanegol ar gael.",
+    "noCorrectAnswer": "Dim ateb cywir wedi'i nodi"
   },
   "study": {
     "box": "Blwch",
@@ -97,5 +112,118 @@
     "ja": "Japaneaidd",
     "vi": "Fietnameg",
     "zh": "Tsieinëeg"
+  },
+  "common": {
+    "yes": "Ie",
+    "no": "Na",
+    "ok": "Iawn",
+    "cancel": "Canslo",
+    "save": "Arbed",
+    "close": "Cau",
+    "loading": "Llwytho...",
+    "error": "Gwall",
+    "success": "Llwyddiant"
+  },
+  "ai": {
+    "title": "Generadur Cardiau AI",
+    "wizard": "Dewin Creu Cardiau",
+    "questionTypes": {
+      "shortAnswer": "Ateb Byr",
+      "multipleChoice": "Dewis Lluosog",
+      "essay": "Traethawd",
+      "acronym": "Acronym"
+    },
+    "examBoards": {
+      "aqa": "AQA",
+      "edexcel": "Edexcel",
+      "ocr": "OCR",
+      "wjec": "CBAC",
+      "ccea": "CCEA",
+      "ib": "Bagloriaeth Ryngwladol"
+    },
+    "examTypes": {
+      "gcse": "TGAU",
+      "aLevel": "Safon Uwch"
+    },
+    "steps": {
+      "examType": {
+        "title": "Dewis Math o Arholiad",
+        "placeholder": "-- Dewis Math o Arholiad --"
+      },
+      "examBoard": {
+        "title": "Dewis Bwrdd Arholi",
+        "placeholder": "-- Dewis Bwrdd Arholi --"
+      },
+      "subject": {
+        "title": "Dewis Pwnc",
+        "placeholder": "-- Dewis Pwnc --",
+        "divider": "NEU",
+        "newSubjectLabel": "Rhowch Bwnc Newydd",
+        "newSubjectPlaceholder": "Rhowch enw pwnc arbennig"
+      },
+      "topic": {
+        "title": "Dewis Testun",
+        "label": "Testun",
+        "placeholder": "Rhowch enw testun",
+        "generate": "Cynhyrchu Testunau",
+        "regenerate": "Ail-gynhyrchu Testunau",
+        "save": "Arbed Rhestr Testunau",
+        "custom": "Neu rhowch destun arbennig:"
+      },
+      "numCards": {
+        "title": "Nifer y Cardiau",
+        "helper": "Dewiswch rhwng 1 a 20 cerdyn"
+      },
+      "questionType": {
+        "title": "Dewis Math o Gwestiwn",
+        "shortAnswerDesc": "Mae cwestiynau ateb byr yn profi gallu i gofio ffeithiau a chysyniadau allweddol.",
+        "multipleChoiceDesc": "Mae cwestiynau dewis lluosog yn darparu opsiynau i ddewis ohonynt, gan brofi adnabyddiaeth.",
+        "essayDesc": "Mae cwestiynau arddull traethawd yn profi dealltwriaeth ddyfnach a chymhwysiad gwybodaeth.",
+        "acronymDesc": "Mae cwestiynau acronym yn helpu i gofio rhestrau neu ddilyniannau gan ddefnyddio patrymau llythyru cofiadwy."
+      },
+      "additionalInstructions": {
+        "title": "Cyfarwyddiadau Ychwanegol",
+        "placeholder": "Rhowch unrhyw gyfarwyddiadau penodol ar gyfer yr AI (dewisol)"
+      },
+      "confirmation": {
+        "title": "Adolygu Eich Dewisiadau",
+        "examType": "Math o Arholiad:",
+        "examBoard": "Bwrdd Arholi:",
+        "subject": "Pwnc:",
+        "topic": "Testun:",
+        "numCards": "Nifer y Cardiau:",
+        "questionType": "Math o Gwestiwn:"
+      },
+      "generating": {
+        "title": "Cynhyrchu Eich Cardiau Flash",
+        "message": "Creu {{count}} cerdyn flash ar gyfer {{type}} {{board}} {{subject}}...",
+        "subtext": "Mae ein AI yn dadansoddi'r cwricwlwm ac yn creu cwestiynau o ansawdd uchel wedi'u teilwra i'ch manylebau."
+      },
+      "preview": {
+        "title": "Rhagolwg o Gardiau Wedi'u Cynhyrchu",
+        "error": "Roedd gwall wrth gynhyrchu eich cardiau:",
+        "noCards": "Ni chafodd unrhyw gardiau eu cynhyrchu. Rhowch gynnig arall gyda pharamedrau gwahanol."
+      },
+      "unknown": "Cam anhysbys"
+    },
+    "buttons": {
+      "next": "Nesaf",
+      "previous": "Blaenorol",
+      "cancel": "Canslo",
+      "generate": "Cynhyrchu Cardiau",
+      "save": "Arbed Pob Cerdyn",
+      "regenerate": "Ail-gynhyrchu",
+      "edit": "Golygu Cardiau"
+    },
+    "modal": {
+      "title": "Generadur Cardiau AI",
+      "close": "Cau"
+    },
+    "messages": {
+      "generatingTopics": "Cynhyrchu testunau...",
+      "savingCards": "Arbed cardiau...",
+      "cardsAdded": "{{count}} cerdyn wedi'u hychwanegu i'ch casgliad!",
+      "error": "Gwall: {{message}}"
+    }
   }
 } 
