@@ -1,0 +1,61 @@
+.options-container {
+  margin-top: 15px;
+  width: 100%;
+}
+
+.options-container ol {
+  list-style-type: lower-alpha;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.option-item {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.option-item:hover:not(.preview) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.option-item.selected {
+  background-color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+/* Preview mode styling */
+.option-item.preview {
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  cursor: default;
+}
+
+/* Correct/incorrect styles for feedback */
+.option-item.correct {
+  background-color: rgba(76, 175, 80, 0.3);
+  border: 1px solid #4CAF50;
+}
+
+.option-item.incorrect {
+  background-color: rgba(244, 67, 54, 0.3);
+  border: 1px solid #F44336;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 600px) {
+  .options-container ol {
+    padding-left: 15px;
+  }
+  
+  .option-item {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.95em;
+  }
+} 

@@ -1,0 +1,41 @@
+.translating-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: #666;
+  font-weight: bold;
+}
+
+.translating-indicator .dot-1,
+.translating-indicator .dot-2,
+.translating-indicator .dot-3 {
+  animation: pulse 1s infinite;
+  font-size: 1.5rem;
+  line-height: 0.5;
+  margin: 0 2px;
+}
+
+.translating-indicator .dot-2 {
+  animation-delay: 0.2s;
+}
+
+.translating-indicator .dot-3 {
+  animation-delay: 0.4s;
+}
+
+.translation-error {
+  color: #d32f2f;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  margin: 4px 0;
+  background-color: rgba(211, 47, 47, 0.1);
+  border-radius: 4px;
+  text-align: center;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+} 

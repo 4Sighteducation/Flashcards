@@ -1,26 +1,100 @@
 // TranslationService.js
-// A simple utility for translating text using the LibreTranslate API (free and open source)
+// A utility for translating text using multiple translation APIs
 
-// Default free LibreTranslate public instance - for production, consider setting up your own instance
-// or using a paid service with better reliability
-const LIBRE_TRANSLATE_API = process.env.REACT_APP_TRANSLATE_API || "https://libretranslate.de/translate";
+// LibreTranslate API configuration
+const LIBRE_TRANSLATE_API = process.env.REACT_APP_TRANSLATE_API || "https://libretranslate.com/translate";
 const LIBRE_TRANSLATE_API_KEY = process.env.REACT_APP_LIBRE_TRANSLATE_API_KEY;
+
+// Welsh Translation API configuration
+const WELSH_TRANSLATE_API = "http://api.techiaith.org/translate-smt/v1/";
+const WELSH_TRANSLATE_API_KEY = process.env.REACT_APP_WELSH_TRANSLATE_API_KEY;
+const WELSH_TRANSLATE_ENGINE = "CofnodYCynulliad"; // Default engine
+
+/**
+ * Translates text using the most appropriate translation API based on the language pair
+ * 
+ * @param {string} text - The text to translate
+ * @param {string} targetLang - The target language code (e.g., 'cy', 'en', 'fr')
+ * @param {string} sourceLang - The source language code
+ * @returns {Promise<string>} - The translated text
+ */
+export const translateText = async (text, targetLang, sourceLang = 'en') => {
+  if (!text || text.trim() === '') return '';
+  
+  // Use Welsh API for Welsh <-> English translations
+  if ((targetLang === 'cy' && sourceLang === 'en') || 
+      (targetLang === 'en' && sourceLang === 'cy')) {
+    return translateWithWelshAPI(text, targetLang, sourceLang);
+  } else {
+    // Use LibreTranslate for all other language pairs
+    return translateWithLibreTranslate(text, targetLang, sourceLang);
+  }
+};
+
+/**
+ * Translates text using the Welsh Translation API
+ * 
+ * @param {string} text - The text to translate
+ * @param {string} targetLang - The target language code ('cy' or 'en')
+ * @param {string} sourceLang - The source language code ('cy' or 'en')
+ * @returns {Promise<string>} - The translated text
+ */
+const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
+  try {
+    // Check if API key is available
+    if (!WELSH_TRANSLATE_API_KEY) {
+      console.error('Welsh Translation API key not found');
+      throw new Error('Welsh Translation API key not found');
+    }
+    
+    // Construct the API URL with query parameters
+    const url = new URL(WELSH_TRANSLATE_API);
+    url.searchParams.append('api_key', WELSH_TRANSLATE_API_KEY);
+    url.searchParams.append('q', text);
+    url.searchParams.append('engine', WELSH_TRANSLATE_ENGINE);
+    url.searchParams.append('source', sourceLang);
+    url.searchParams.append('target', targetLang);
+    
+    // Make the API request
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Welsh translation error:', errorData);
+      throw new Error(`Welsh translation failed: ${errorData.errors ? errorData.errors[0] : 'Unknown error'}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(`Welsh translation failed: ${data.errors ? data.errors[0] : 'Unknown error'}`);
+    }
+    
+    return data.translations[0].translatedText;
+  } catch (error) {
+    console.error('Welsh translation request failed:', error);
+    // Fall back to LibreTranslate if Welsh API fails
+    return translateWithLibreTranslate(text, targetLang, sourceLang);
+  }
+};
 
 /**
  * Translates text using the LibreTranslate API
+ * 
  * @param {string} text - The text to translate
- * @param {string} targetLang - The target language code (e.g., 'es', 'fr')
- * @param {string} sourceLang - The source language code (defaults to 'auto' for auto-detection)
+ * @param {string} targetLang - The target language code
+ * @param {string} sourceLang - The source language code
  * @returns {Promise<string>} - The translated text
  */
-export const translateText = async (text, targetLang, sourceLang = 'auto') => {
-  if (!text || text.trim() === '') return '';
-  
+const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
   try {
+    const actualSourceLang = sourceLang === 'auto' ? 'auto' : getLibreTranslateCode(sourceLang);
+    const actualTargetLang = getLibreTranslateCode(targetLang);
+    
     const requestBody = {
       q: text,
-      source: sourceLang,
-      target: targetLang,
+      source: actualSourceLang,
+      target: actualTargetLang,
       format: 'text',
     };
     
@@ -39,39 +113,106 @@ export const translateText = async (text, targetLang, sourceLang = 'auto') => {
     
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Translation error:', errorData);
-      throw new Error(`Translation failed: ${errorData.error || 'Unknown error'}`);
+      console.error('LibreTranslate error:', errorData);
+      throw new Error(`LibreTranslate failed: ${errorData.error || 'Unknown error'}`);
     }
     
     const data = await response.json();
     return data.translatedText;
   } catch (error) {
-    console.error('Translation request failed:', error);
+    console.error('LibreTranslate request failed:', error);
     // Return original text if translation fails
     return text;
   }
 };
 
 /**
- * Checks if the translation API is available
- * @returns {Promise<boolean>} - True if the API is available
+ * Map between i18next language codes and LibreTranslate language codes
+ */
+const libreTranslateLanguageMap = {
+  'en': 'en', // English
+  'cy': 'en', // Welsh - not supported by LibreTranslate, fallback to English
+  'ar': 'ar', // Arabic
+  'es': 'es', // Spanish
+  'it': 'it', // Italian
+  'fr': 'fr', // French
+  'ja': 'zh', // Japanese - fallback to Chinese if not supported
+  'vi': 'vi', // Vietnamese
+  'zh': 'zh', // Chinese (Simplified)
+};
+
+/**
+ * Get the corresponding LibreTranslate language code
+ * @param {string} languageCode - The i18next language code
+ * @returns {string} - The LibreTranslate language code
+ */
+const getLibreTranslateCode = (languageCode) => {
+  return libreTranslateLanguageMap[languageCode] || 'en'; // Default to English if not found
+};
+
+/**
+ * Checks if the translation APIs are available
+ * @returns {Promise<{libre: boolean, welsh: boolean}>} - Availability status of translation APIs
  */
 export const checkTranslationApiAvailability = async () => {
+  const result = {
+    libre: false,
+    welsh: false
+  };
+  
+  // Check LibreTranslate API
   try {
-    // Construct URL for languages endpoint
     const languagesEndpoint = LIBRE_TRANSLATE_API.replace('/translate', '/languages');
     
-    // Add API key as query parameter if available
     let url = languagesEndpoint;
     if (LIBRE_TRANSLATE_API_KEY) {
       url = `${languagesEndpoint}?api_key=${encodeURIComponent(LIBRE_TRANSLATE_API_KEY)}`;
     }
     
     const response = await fetch(url);
-    return response.ok;
+    result.libre = response.ok;
   } catch (error) {
-    console.error('Translation API check failed:', error);
-    return false;
+    console.error('LibreTranslate API check failed:', error);
+  }
+  
+  // Check Welsh Translation API
+  try {
+    if (WELSH_TRANSLATE_API_KEY) {
+      const testUrl = new URL(WELSH_TRANSLATE_API);
+      testUrl.searchParams.append('api_key', WELSH_TRANSLATE_API_KEY);
+      testUrl.searchParams.append('q', 'test');
+      testUrl.searchParams.append('engine', WELSH_TRANSLATE_ENGINE);
+      testUrl.searchParams.append('source', 'en');
+      testUrl.searchParams.append('target', 'cy');
+      
+      const response = await fetch(testUrl.toString());
+      result.welsh = response.ok;
+    }
+  } catch (error) {
+    console.error('Welsh Translation API check failed:', error);
+  }
+  
+  return result;
+};
+
+/**
+ * Automatically translates text if the current language differs from the source language
+ * @param {string} text - The text to translate
+ * @param {string} sourceLang - The source language of the text
+ * @param {string} currentLang - The current UI language
+ * @returns {Promise<string>} - The translated text or original text if languages match
+ */
+export const autoTranslateText = async (text, sourceLang = 'en', currentLang) => {
+  // Don't translate if the current language is the same as the source language
+  if (!text || currentLang === sourceLang) {
+    return text;
+  }
+  
+  try {
+    return await translateText(text, currentLang, sourceLang);
+  } catch (error) {
+    console.error('Auto-translation failed:', error);
+    return text;
   }
 };
 

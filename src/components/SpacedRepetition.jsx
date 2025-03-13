@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { getContrastColor } from '../utils/colorUtils';
 import TranslateButton from './TranslateButton';
+import AutoTranslatedText from './AutoTranslatedText';
 import "./SpacedRepetition.css";
 import Flashcard from "./Flashcard";
 
@@ -463,8 +464,7 @@ const SpacedRepetition = ({
                               </div>
                             </div>
                             <div className="card-preview-content">
-                              <div dangerouslySetInnerHTML={{ __html: card.front || card.question }} />
-                              <TranslateButton content={card.front || card.question} sourceLang="en" />
+                              <AutoTranslatedText content={card.front || card.question} html={true} />
                             </div>
                           </div>
                         ))}
@@ -578,17 +578,17 @@ const SpacedRepetition = ({
               
               <div
                 className="card-content"
-                dangerouslySetInnerHTML={{
-                  __html:
+              >
+                <AutoTranslatedText 
+                  content={
                     currentCards[currentIndex].front ||
                     currentCards[currentIndex].question ||
                     "No question"
-                }}
-              />
-              <TranslateButton 
-                content={currentCards[currentIndex].front || currentCards[currentIndex].question || "No question"} 
-                sourceLang="en" 
-              />
+                  } 
+                  html={true} 
+                />
+              </div>
+              
               {currentCards[currentIndex].questionType === 'multiple_choice' && !isFlipped && renderMultipleChoice(currentCards[currentIndex])}
               
               {!currentCards[currentIndex].isReviewable && (
@@ -614,25 +614,19 @@ const SpacedRepetition = ({
               )}
               <div
                 className="card-content"
-                dangerouslySetInnerHTML={{
-                  __html:
+              >
+                <AutoTranslatedText 
+                  content={
                     currentCards[currentIndex].back ||
                     (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
                       currentCards[currentIndex].detailedAnswer : 
                       currentCards[currentIndex].correctAnswer || 
                       "No answer")
-                }}
-              />
-              <TranslateButton 
-                content={
-                  currentCards[currentIndex].back ||
-                  (currentCards[currentIndex].detailedAnswer && !currentCards[currentIndex].additionalInfo ? 
-                    currentCards[currentIndex].detailedAnswer : 
-                    currentCards[currentIndex].correctAnswer || 
-                    "No answer")
-                } 
-                sourceLang="en" 
-              />
+                  }
+                  html={true}
+                />
+              </div>
+              
               {currentCards[currentIndex].questionType === 'multiple_choice' && isFlipped && renderMultipleChoice(currentCards[currentIndex])}
             </div>
           </div>

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import Flashcard from "./Flashcard";
 import PrintModal from "./PrintModal";
+import AutoTranslatedText from "./AutoTranslatedText";
 import "./FlashcardList.css";
 
 const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
+  const { t } = useTranslation();
   // State to track expanded topics
   const [expandedTopics, setExpandedTopics] = useState({});
   // State for print modal
@@ -242,8 +245,8 @@ const FlashcardList = ({ cards, onDeleteCard, onUpdateCard }) => {
   if (cards.length === 0) {
     return (
       <div className="empty-card-bank">
-        <h3>No Flashcards Found</h3>
-        <p>Create new cards or adjust your filters to see cards here.</p>
+        <h3>{t("cards.noCards")}</h3>
+        <p>{t("cards.createNewCards")}</p>
       </div>
     );
   }
