@@ -1,61 +1,86 @@
-.options-container {
-  margin-top: 15px;
+.multiple-choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
+  margin: 10px 0;
 }
 
-.options-container ol {
-  list-style-type: lower-alpha;
-  padding-left: 20px;
-  margin: 0;
-}
-
-.option-item {
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
+.multiple-choice-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
   cursor: pointer;
+  transition: all 0.2s ease;
   position: relative;
+  overflow: hidden;
 }
 
-.option-item:hover:not(.preview) {
-  background-color: rgba(255, 255, 255, 0.2);
+.multiple-choice-option:hover:not(.disabled) {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.option-item.selected {
-  background-color: rgba(255, 255, 255, 0.3);
-  font-weight: bold;
+.multiple-choice-option.selected {
+  background-color: #dee2e6;
+  border-color: #adb5bd;
+  font-weight: 500;
 }
 
-/* Preview mode styling */
-.option-item.preview {
-  padding: 4px 8px;
-  margin-bottom: 4px;
-  font-size: 0.9em;
+.multiple-choice-option.correct {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-color: #28a745;
+}
+
+.multiple-choice-option.incorrect {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-color: #dc3545;
+}
+
+.multiple-choice-option.disabled {
   cursor: default;
+  opacity: 0.8;
 }
 
-/* Correct/incorrect styles for feedback */
-.option-item.correct {
-  background-color: rgba(76, 175, 80, 0.3);
-  border: 1px solid #4CAF50;
+.option-letter {
+  font-weight: bold;
+  margin-right: 10px;
+  min-width: 20px;
 }
 
-.option-item.incorrect {
-  background-color: rgba(244, 67, 54, 0.3);
-  border: 1px solid #F44336;
+.option-text {
+  flex: 1;
+  word-break: break-word;
 }
 
-/* Mobile responsive styles */
-@media (max-width: 600px) {
-  .options-container ol {
-    padding-left: 15px;
+.no-options-error {
+  padding: 15px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .multiple-choice-option {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .multiple-choice-options {
+    gap: 6px;
   }
   
-  .option-item {
+  .multiple-choice-option {
     padding: 6px 10px;
-    margin-bottom: 6px;
-    font-size: 0.95em;
+    font-size: 0.9rem;
   }
 } 

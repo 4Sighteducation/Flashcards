@@ -95,8 +95,53 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
     "#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000"
   ];
   
+  // Gets the correct answer for multiple choice questions
+  const getCorrectAnswer = () => {
+    if (!isMultipleChoice) return '';
+    
+    // For cards with correctAnswer property
+    if (card.correctAnswer) {
+      return card.correctAnswer;
+    }
+    
+    // For cards with correctOptionIndex property (0-based index)
+    if (card.correctOptionIndex !== undefined && card.options) {
+      const index = parseInt(card.correctOptionIndex);
+      if (!isNaN(index) && index >= 0 && index < card.options.length) {
+        return card.options[index];
+      }
+    }
+    
+    // For cards with answer property that might match one of the options
+    if (card.answer && card.options) {
+      // Try to find the option that matches the answer
+      const matchingOption = card.options.find(option => 
+        option.toLowerCase().trim() === card.answer.toLowerCase().trim()
+      );
+      
+      if (matchingOption) {
+        return matchingOption;
+      }
+      
+      // If no direct match, return the answer
+      return card.answer;
+    }
+    
+    return 'No correct answer specified';
+  };
+  
   // Determine if this is a multiple choice card
-  const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options);
+  const isMultipleChoice = card.questionType === 'multiple_choice' && Array.isArray(card.options) && card.options.length > 0;
+  
+  // For debugging
+  if (card.questionType === 'multiple_choice') {
+    console.log(`Flashcard ${card.id || 'unknown'} - Multiple choice:`, { 
+      questionType: card.questionType,
+      hasOptions: Boolean(card.options),
+      optionsLength: card.options?.length,
+      options: card.options
+    });
+  }
   
   // Check if card has additional information
   const hasAdditionalInfo = card.additionalInfo || card.detailedAnswer;
@@ -171,11 +216,19 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
                 <ScaledText className="question-title" maxFontSize={16}>
                   <AutoTranslatedText content={card.front || card.question} html={true} />
                 </ScaledText>
-                <MultipleChoiceOptions 
-                  options={card.options || []} 
-                  preview={preview} 
-                  disabled={true}
-                />
+                <div className="multiple-choice-container">
+                  {card.options && card.options.length > 0 ? (
+                    <MultipleChoiceOptions 
+                      options={card.options} 
+                      preview={preview} 
+                      disabled={true}
+                    />
+                  ) : (
+                    <div className="missing-options-error">
+                      This card is marked as multiple choice but has no options
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <ScaledText maxFontSize={16}>
@@ -184,39 +237,28 @@ const Flashcard = ({ card, onDelete, onFlip, onUpdateCard, showButtons = true, p
             )}
           </div>
           
-          <div className="flashcard-back" style={{ 
-            color: '#000000', 
-            backgroundColor: '#ffffff' 
-          }}>
-            <ScaledText maxFontSize={14}>
-              {card.questionType === 'multiple_choice' ? (
-                <div>
-                  Correct Answer: {(() => {
-                    // Clean the correct answer of any existing prefix
-                    const cleanAnswer = card.correctAnswer.replace(/^[a-d]\)\s*/i, '');
-                    
-                    // Find the index of this answer in the options array
-                    const answerIndex = card.options.findIndex(option => 
-                      option.replace(/^[a-d]\)\s*/i, '').trim() === cleanAnswer.trim()
-                    );
-                    
-                    // Get the letter for this index (a, b, c, d)
-                    const letter = answerIndex >= 0 ? String.fromCharCode(97 + answerIndex) : '';
-                    
-                    // Return formatted answer with letter prefix
-                    return answerIndex >= 0 ? `${letter}) ${cleanAnswer}` : cleanAnswer;
-                  })()}
-                  <AutoTranslatedText content={card.correctAnswer} />
-                </div>
-              ) : (
-                <AutoTranslatedText content={card.back || "No answer"} html={true} />
-              )}
-            </ScaledText>
-            
-            {card.boxNum !== undefined && (
-              <div className="box-indicator">
-                Box {card.boxNum}
-              </div>
+          <div className="flashcard-back" style={{ color: textColor }}>
+            {isFlipped && (
+              <>
+                {isMultipleChoice ? (
+                  <>
+                    <h4 className="answer-heading">Correct Answer:</h4>
+                    <ScaledText maxFontSize={16}>
+                      <AutoTranslatedText 
+                        content={getCorrectAnswer()} 
+                        html={true} 
+                      />
+                    </ScaledText>
+                  </>
+                ) : (
+                  <ScaledText maxFontSize={16}>
+                    <AutoTranslatedText 
+                      content={card.back || card.answer || "No answer provided"} 
+                      html={true} 
+                    />
+                  </ScaledText>
+                )}
+              </>
             )}
           </div>
         </div>

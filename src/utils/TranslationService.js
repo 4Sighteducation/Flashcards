@@ -6,12 +6,34 @@ const LIBRE_TRANSLATE_API = process.env.REACT_APP_TRANSLATE_API || "https://libr
 const LIBRE_TRANSLATE_API_KEY = process.env.REACT_APP_LIBRE_TRANSLATE_API_KEY;
 
 // Welsh Translation API configuration
-const WELSH_TRANSLATE_API = "http://api.techiaith.org/translate-smt/v1/";
+const WELSH_TRANSLATE_API = process.env.REACT_APP_WELSH_TRANSLATE_API || "http://api.techiaith.org/translate-smt/v1/";
 const WELSH_TRANSLATE_API_KEY = process.env.REACT_APP_WELSH_TRANSLATE_API_KEY;
-const WELSH_TRANSLATE_ENGINE = "CofnodYCynulliad"; // Default engine
+const WELSH_TRANSLATE_ENGINE = process.env.REACT_APP_WELSH_TRANSLATE_ENGINE || "CofnodYCynulliad";
 
 // Create a simple in-memory cache for translations to avoid redundant API calls
 const translationCache = {};
+
+// Track API rate limits
+const rateLimitTracking = {
+  libre: {
+    isLimited: false,
+    resetTime: null,
+    remaining: 100, // Initial estimate
+    requestsThisMinute: 0,
+    lastRequestTime: 0
+  },
+  welsh: {
+    isLimited: false,
+    resetTime: null,
+    remaining: 100, // Initial estimate
+    requestsThisMinute: 0,
+    lastRequestTime: 0
+  }
+};
+
+// Configure translation request throttling
+const THROTTLE_DELAY = 500; // ms between requests to avoid rate limiting
+let lastRequestTime = Date.now();
 
 /**
  * Translates text using the most appropriate translation API based on the language pair
@@ -24,14 +46,40 @@ const translationCache = {};
 export const translateText = async (text, targetLang, sourceLang = 'en') => {
   if (!text || text.trim() === '') return '';
   
+  // IMPORTANT: Throttle requests to avoid rate limiting
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < THROTTLE_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY - timeSinceLastRequest));
+  }
+  lastRequestTime = Date.now();
+  
   console.log(`TranslationService: Translating from ${sourceLang} to ${targetLang}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
   
   // Use Welsh API for Welsh <-> English translations
   if ((targetLang === 'cy' && sourceLang === 'en') || 
       (targetLang === 'en' && sourceLang === 'cy')) {
+    
+    // Check if Welsh API is rate limited
+    if (rateLimitTracking.welsh.isLimited) {
+      console.log('Welsh API is rate limited, falling back to LibreTranslate');
+      return translateWithLibreTranslate(text, targetLang, sourceLang);
+    }
+    
     console.log('TranslationService: Using Welsh API');
-    return translateWithWelshAPI(text, targetLang, sourceLang);
+    try {
+      return await translateWithWelshAPI(text, targetLang, sourceLang);
+    } catch (error) {
+      console.error('Welsh translation failed, falling back to LibreTranslate:', error);
+      return translateWithLibreTranslate(text, targetLang, sourceLang);
+    }
   } else {
+    // Check if LibreTranslate is rate limited
+    if (rateLimitTracking.libre.isLimited) {
+      console.log('LibreTranslate is rate limited, returning original text');
+      return text;
+    }
+    
     // Use LibreTranslate for all other language pairs
     console.log('TranslationService: Using LibreTranslate API');
     return translateWithLibreTranslate(text, targetLang, sourceLang);
@@ -54,6 +102,10 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
       throw new Error('Welsh Translation API key not found');
     }
     
+    // Update rate limit tracking
+    rateLimitTracking.welsh.requestsThisMinute++;
+    rateLimitTracking.welsh.lastRequestTime = Date.now();
+    
     console.log(`Welsh API call: ${WELSH_TRANSLATE_API}?api_key=***&q=${encodeURIComponent(text.substring(0, 20))}...`);
     
     // Construct the API URL with query parameters
@@ -68,6 +120,20 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
     const response = await fetch(url.toString());
     
     console.log('Welsh API response status:', response.status);
+    
+    // Check for rate limiting
+    if (response.status === 429) {
+      console.error('Welsh API rate limit reached');
+      rateLimitTracking.welsh.isLimited = true;
+      
+      // Reset rate limit status after 60 seconds
+      setTimeout(() => {
+        rateLimitTracking.welsh.isLimited = false;
+        rateLimitTracking.welsh.requestsThisMinute = 0;
+      }, 60000);
+      
+      throw new Error('Welsh translation API rate limit reached');
+    }
     
     // Get the response as text first for debugging
     const responseText = await response.text();
@@ -95,8 +161,7 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
     return data.translations[0].translatedText;
   } catch (error) {
     console.error('Welsh translation request failed:', error);
-    // Fall back to LibreTranslate if Welsh API fails
-    return translateWithLibreTranslate(text, targetLang, sourceLang);
+    throw error; // Let the caller handle the fallback
   }
 };
 
@@ -112,6 +177,10 @@ const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
   try {
     const actualSourceLang = sourceLang === 'auto' ? 'auto' : getLibreTranslateCode(sourceLang);
     const actualTargetLang = getLibreTranslateCode(targetLang);
+    
+    // Update rate limit tracking
+    rateLimitTracking.libre.requestsThisMinute++;
+    rateLimitTracking.libre.lastRequestTime = Date.now();
     
     console.log(`LibreTranslate API call: source=${actualSourceLang}, target=${actualTargetLang}`);
     
@@ -137,9 +206,42 @@ const translateWithLibreTranslate = async (text, targetLang, sourceLang) => {
     
     console.log('LibreTranslate response status:', response.status);
     
+    // Check for rate limiting
+    if (response.status === 429) {
+      console.error('LibreTranslate rate limit reached');
+      rateLimitTracking.libre.isLimited = true;
+      
+      // Reset rate limit status after 60 seconds
+      setTimeout(() => {
+        rateLimitTracking.libre.isLimited = false;
+        rateLimitTracking.libre.requestsThisMinute = 0;
+      }, 60000);
+      
+      return text; // Return original text when rate limited
+    }
+    
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: errorText };
+      }
+      
       console.error('LibreTranslate error:', errorData);
+      
+      // Check for rate limiting in error message
+      if (errorText.includes('Too many request') || errorText.includes('rate limit')) {
+        rateLimitTracking.libre.isLimited = true;
+        
+        // Reset rate limit status after 60 seconds
+        setTimeout(() => {
+          rateLimitTracking.libre.isLimited = false;
+          rateLimitTracking.libre.requestsThisMinute = 0;
+        }, 60000);
+      }
+      
       throw new Error(`LibreTranslate failed: ${errorData.error || 'Unknown error'}`);
     }
     

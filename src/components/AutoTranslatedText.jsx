@@ -1,89 +1,139 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { autoTranslateText } from '../utils/TranslationService';
+import { translateText } from '../utils/TranslationService';
 import './AutoTranslatedText.css';
 
 /**
- * Component that automatically translates text when the language changes
- * @param {Object} props
- * @param {string} props.content - The text content to translate
- * @param {string} props.sourceLang - The source language of the content (defaults to 'en')
- * @param {boolean} props.html - Whether the content is HTML (defaults to false)
+ * Component for automatically translating text content based on the current language
+ * Handles both plain text and HTML content
  */
-const AutoTranslatedText = ({ content, sourceLang = 'en', html = false }) => {
+const AutoTranslatedText = ({ content, html = false, className = '', disabled = false }) => {
   const { i18n } = useTranslation();
   const [translatedContent, setTranslatedContent] = useState(content);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Translate the content when the language changes or content changes
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2;
+  const mountedRef = useRef(true);
+  
+  // Cache to store translations locally to avoid unnecessary API calls
+  const translationCache = useRef({});
+  const cacheKey = `${content}_${i18n.language}`;
+  
+  // Translate content when language changes or content changes
   useEffect(() => {
-    const translateContent = async () => {
-      // If the content is empty or the language is the same as the source, don't translate
-      if (!content || i18n.language === sourceLang) {
-        setTranslatedContent(content);
+    // Don't translate if disabled or content is empty
+    if (disabled || !content || content.trim() === '') {
+      setTranslatedContent(content);
+      return;
+    }
+    
+    // Helper function to actually perform the translation
+    const performTranslation = async () => {
+      // Skip translation for English content when language is English
+      if (i18n.language === 'en') {
+        if (mountedRef.current) {
+          setTranslatedContent(content);
+          setIsTranslating(false);
+        }
         return;
       }
-
-      setIsLoading(true);
-      setError(null);
-
+      
       try {
-        const translated = await autoTranslateText(content, sourceLang, i18n.language);
-        setTranslatedContent(translated);
-      } catch (err) {
-        console.error('Error translating content:', err);
-        setError(err.message);
-        // Fallback to original content on error
-        setTranslatedContent(content);
-      } finally {
-        setIsLoading(false);
+        // Check if translation is already in cache
+        if (translationCache.current[cacheKey]) {
+          console.log('Using cached translation for:', content.substring(0, 30));
+          if (mountedRef.current) {
+            setTranslatedContent(translationCache.current[cacheKey]);
+            setIsTranslating(false);
+            setTranslationError(null);
+          }
+          return;
+        }
+        
+        console.log(`Translating to ${i18n.language}:`, content.substring(0, 30));
+        setIsTranslating(true);
+        setTranslationError(null);
+        
+        const translated = await translateText(content, i18n.language, 'en');
+        
+        // Only update state if component is still mounted
+        if (mountedRef.current) {
+          // Don't update if translation failed (returned original text)
+          if (translated && translated !== content) {
+            console.log('Translation result:', translated.substring(0, 30));
+            setTranslatedContent(translated);
+            
+            // Cache the successful translation
+            translationCache.current[cacheKey] = translated;
+          } else {
+            // If translation returned same text, it might have failed silently
+            console.warn('Translation may have failed - returned original text');
+            setTranslatedContent(content);
+          }
+          
+          setIsTranslating(false);
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+        
+        if (mountedRef.current) {
+          setTranslationError(error.message || 'Translation failed');
+          setIsTranslating(false);
+          
+          // Retry up to maxRetries times with exponential backoff
+          if (retryCount < maxRetries) {
+            const backoffTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            console.log(`Retrying translation in ${backoffTime}ms (attempt ${retryCount + 1}/${maxRetries})`);
+            
+            setTimeout(() => {
+              if (mountedRef.current) {
+                setRetryCount(prevCount => prevCount + 1);
+                performTranslation();
+              }
+            }, backoffTime);
+          } else {
+            // Max retries reached, use original content
+            setTranslatedContent(content);
+          }
+        }
       }
     };
-
-    translateContent();
-  }, [content, i18n.language, sourceLang]);
-
-  // If the content is HTML, render it as such
+    
+    // Debounce translation requests to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      performTranslation();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [content, i18n.language, disabled, cacheKey, retryCount]);
+  
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  
+  // Render the content with loading/error indicators
   if (html) {
     return (
-      <>
-        {isLoading ? (
-          <div className="translating-indicator">
-            <span className="dot-1">.</span>
-            <span className="dot-2">.</span>
-            <span className="dot-3">.</span>
-          </div>
-        ) : error ? (
-          <div>
-            <div dangerouslySetInnerHTML={{ __html: content }} />
-            <div className="translation-error">{error}</div>
-          </div>
-        ) : (
-          <div dangerouslySetInnerHTML={{ __html: translatedContent }} />
-        )}
-      </>
+      <div className={`auto-translated-html ${className} ${isTranslating ? 'translating' : ''}`}>
+        {isTranslating && <span className="translating-indicator">...</span>}
+        <div dangerouslySetInnerHTML={{ __html: translatedContent || content }} />
+        {translationError && <div className="translation-error">{translationError}</div>}
+      </div>
     );
   }
-
-  // Otherwise render as plain text
+  
   return (
-    <>
-      {isLoading ? (
-        <div className="translating-indicator">
-          <span className="dot-1">.</span>
-          <span className="dot-2">.</span>
-          <span className="dot-3">.</span>
-        </div>
-      ) : error ? (
-        <div>
-          {content}
-          <div className="translation-error">{error}</div>
-        </div>
-      ) : (
-        translatedContent
-      )}
-    </>
+    <span className={`auto-translated ${className} ${isTranslating ? 'translating' : ''}`}>
+      {isTranslating && <span className="translating-indicator">...</span>}
+      {translatedContent || content}
+      {translationError && <div className="translation-error">{translationError}</div>}
+    </span>
   );
 };
 
