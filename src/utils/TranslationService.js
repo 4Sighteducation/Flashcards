@@ -56,6 +56,15 @@ export const translateText = async (text, targetLang, sourceLang = 'en') => {
   
   console.log(`TranslationService: Translating from ${sourceLang} to ${targetLang}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
   
+  // Create cache key for this translation request
+  const cacheKey = `${text}_${sourceLang}_${targetLang}`;
+  
+  // Check if we have a cached result
+  if (translationCache[cacheKey]) {
+    console.log('Using cached translation');
+    return translationCache[cacheKey];
+  }
+  
   // Use Welsh API for Welsh <-> English translations
   if ((targetLang === 'cy' && sourceLang === 'en') || 
       (targetLang === 'en' && sourceLang === 'cy')) {
@@ -66,11 +75,33 @@ export const translateText = async (text, targetLang, sourceLang = 'en') => {
       return translateWithLibreTranslate(text, targetLang, sourceLang);
     }
     
+    // Check if API key is properly configured
+    if (!WELSH_TRANSLATE_API_KEY || WELSH_TRANSLATE_API_KEY === 'your_actual_welsh_translate_api_key') {
+      console.warn('Welsh Translation API key is not properly configured, falling back to LibreTranslate');
+      return translateWithLibreTranslate(text, targetLang, sourceLang);
+    }
+    
     console.log('TranslationService: Using Welsh API');
     try {
-      return await translateWithWelshAPI(text, targetLang, sourceLang);
+      const result = await translateWithWelshAPI(text, targetLang, sourceLang);
+      // Cache successful result
+      translationCache[cacheKey] = result;
+      return result;
     } catch (error) {
       console.error('Welsh translation failed, falling back to LibreTranslate:', error);
+      
+      // If it's a network error, mark as temporarily unavailable to avoid retrying too soon
+      if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('Network'))) {
+        console.warn('Welsh API appears to be unavailable, will temporarily use LibreTranslate');
+        rateLimitTracking.welsh.isLimited = true;
+        
+        // Try again after 30 seconds
+        setTimeout(() => {
+          rateLimitTracking.welsh.isLimited = false;
+        }, 30000);
+      }
+      
+      // Try LibreTranslate instead
       return translateWithLibreTranslate(text, targetLang, sourceLang);
     }
   } else {
@@ -116,8 +147,24 @@ const translateWithWelshAPI = async (text, targetLang, sourceLang) => {
     url.searchParams.append('source', sourceLang);
     url.searchParams.append('target', targetLang);
     
-    // Make the API request
-    const response = await fetch(url.toString());
+    // Make the API request with additional options
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Origin': window.location.origin
+      },
+      // Add credentials to handle CORS properly
+      credentials: 'omit',
+      // Longer timeout for potentially slow API
+      timeout: 10000,
+      // Indicate we can accept compressed responses
+      compress: true,
+      // Don't follow redirects automatically
+      redirect: 'follow',
+      // Set mode to cors to handle cross-origin requests
+      mode: 'cors'
+    });
     
     console.log('Welsh API response status:', response.status);
     
